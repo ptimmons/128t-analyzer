@@ -2,7 +2,7 @@
 
 The `analyze.py` script was designed to programmatically parse through the mountain of data provided by a 128T router's *session table* (which tracks all active connections through the system) to look for:
 
-- Abhorrent numbers of sessions of a given type
+- Aberrant numbers of sessions of a given type
 - Which services are getting exercised, by whom, and to what destination(s)
 - Which "applications" (port and protocol tuples) are most common
 
