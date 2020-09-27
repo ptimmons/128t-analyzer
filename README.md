@@ -76,6 +76,7 @@ There are a bunch of command line options for filtering the dataset returned by 
 | `-i` or `--input=` | Runs the script in *offline mode*. This will read the contents of the local file you specify as the argument. |
 | `-o` or `--output=` | Writes a local file with the contents of the session table. Useful when working in online mode, to store a copy of the session table to be re-analyzed using offline mode. This allows for iterative analysis of the data without repeatedly requesting the session table from a busy system. |
 | `-h` or `--help` | Prints the command syntax to the screen and exits. |
+| `-v` or `--version` | Prints the current version and exits. |
 
 ## Interpreting the Output
 

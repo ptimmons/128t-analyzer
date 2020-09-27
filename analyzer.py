@@ -5,6 +5,8 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
+VERSION = "0.1"
+
 import sys
 import json
 import requests
@@ -59,7 +61,7 @@ def main(argv):
     outfile = ""
 
     try:
-        opts, args = getopt.getopt(argv,"ha:i:n:o:p:r:s:t:A:S:",["help","address=","input=","node=","output=","port=","router=","service=","top=","exclude-address=","exclude-service="])
+        opts, args = getopt.getopt(argv,"hva:i:n:o:p:r:s:t:A:S:",["help","version","address=","input=","node=","output=","port=","router=","service=","top=","exclude-address=","exclude-service="])
     except getopt.GetoptError:
         print('analyzer.py -i <inputfile> -x <excludeIPs>')
         sys.exit(2)
@@ -83,6 +85,8 @@ def main(argv):
              node name (optional; when excluded, analyzer will collect all sessions from all nodes in the specified router)
      -h, --help:
              prints this help text
+     -v, --version:
+             prints the current version number
      -a, --address:
              when followed by a comma-separated list of address, will filter the results to only entries containing that address
      -A, --exclude-address:
@@ -97,6 +101,9 @@ def main(argv):
              (default: 10) sets the number of entries to display per category
 """
             print(helptext)
+            sys.exit()
+        elif opt in ("-v", "--version"):
+            print("analyzer version " + VERSION)
             sys.exit()
         elif opt in ("-i", "--input"):
             sessionFile = arg
