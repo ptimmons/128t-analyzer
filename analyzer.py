@@ -5,12 +5,12 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
-VERSION = "0.1"
+VERSION = "0.2"
 
 import sys
 import json
 import requests
-# import os
+import ipaddress
 import getopt
 from collections import Counter
 from tabulate import tabulate
@@ -18,6 +18,13 @@ from tabulate import tabulate
 def isIncluded(list_a, list_b):
     for i in list_a:
         if i in list_b:
+            return True
+    return False
+
+def withinPrefix(address, networkList):
+    addressPlusMask = ipaddress.ip_network(address + "/32")
+    for n in networkList:
+        if addressPlusMask.overlaps(n):
             return True
     return False
 
@@ -49,11 +56,15 @@ def main(argv):
     excludeList = []
     serviceList = []
     addressList = []
+    prefixList = []
     serviceFilterList = []
+    prefixFilterList = []
     portList = []
     filterByService = False
     filterByAddress = False
     filterByPort = False
+    filterByPrefix = False
+    filterOutPrefix = False
     doGraphQL = True
     routerName = ""
     nodeName = ""
@@ -61,7 +72,7 @@ def main(argv):
     outfile = ""
 
     try:
-        opts, args = getopt.getopt(argv,"hva:i:n:o:p:r:s:t:A:S:",["help","version","address=","input=","node=","output=","port=","router=","service=","top=","exclude-address=","exclude-service="])
+        opts, args = getopt.getopt(argv,"hva:i:n:o:p:r:s:t:x:A:S:X:",["help","version","address=","input=","node=","output=","port=","router=","service=","top=","prefix=","exclude-address=","exclude-service=","exclude-prefix="])
     except getopt.GetoptError:
         print('analyzer.py -i <inputfile> -x <excludeIPs>')
         sys.exit(2)
@@ -88,13 +99,17 @@ def main(argv):
      -v, --version:
              prints the current version number
      -a, --address:
-             when followed by a comma-separated list of address, will filter the results to only entries containing that address
+             when followed by a comma-separated list of addresses, will filter the results to only entries containing that address
      -A, --exclude-address:
              when followed by a comma-separated list of addresses, will filter out any results containing that address
      -s, --service:
              when followed by a comma-separated list of service names, will filter the results to only entries containing that service
      -S, --exclude-service:
              will filter the results and exclude any services supplied as a comma-separated list
+     -x, --prefix:
+             when followed by a comma-separated list of prefixes, will filter the results to only include sessions with addresses within that prefix
+     -X, --exclude-prefix:
+             will filter the results to exclude any sessions containing IP addresses within the prefixes supplied as a comma-separated list
      -p, --port:
              will filter the results to include only those containing the port(s) specified as a comma-separated list
      -t, --top:
@@ -129,6 +144,16 @@ def main(argv):
             serviceFilterList = arg.split(",")
         elif opt in ("-t", "--top"):
             topX = int(arg)
+        elif opt in ("-x", "--prefix"):
+            p = ""
+            for p in arg.split(','):
+                prefixList.append(ipaddress.ip_network(p))
+            filterByPrefix = True
+        elif opt in ("-X", "--exclude-prefix"):
+            p = ""
+            for p in arg.split(','):
+                prefixFilterList.append(ipaddress.ip_network(p))
+            filterOutPrefix = True
 
     # input validation here
     if doGraphQL and not routerName:
@@ -208,6 +233,12 @@ def main(argv):
             sessionPorts.append(session[8])
             sessionPorts.append(session[10])
             if not isIncluded(portList, sessionPorts):
+                continue
+        if filterByPrefix:
+            if not (withinPrefix(session[7],prefixList) or withinPrefix(session[9],prefixList)):
+                continue
+        if filterOutPrefix:
+            if (withinPrefix(session[7], prefixFilterList) or withinPrefix(session[9], prefixFilterList)):
                 continue
         svcDestinations.append(session[2])
         if session[1] == 'fwd': 
