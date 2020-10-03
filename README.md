@@ -69,6 +69,8 @@ There are a bunch of command line options for filtering the dataset returned by 
 | `-A` or `--exclude-address=` | Filters the output to exclude any session data with any of the supplied addresses. The input is supplied as a comma-separated list as with `-a`. |
 | `-s` or `--service=` | Filters the output to include only sessions/flows that match for the service name(s) supplied. To specify more than one service name at a time, use a comma-separated list; e.g.,<br />`-s internet,_conductor_1,dns-catcher` |
 | `-S` or `--exclude-service` | Filters the output to exclude any session data with the supplied service name(s). Multiple services can be supplied as a comma-separated list as with `-s`. |
+| `-x` or `--prefix=` | Filters the output to include only sessions/flows that contain an address within the specified prefix(es). To specify more than one prefix at a time, use a comma-separated list; e.g.,<br />`-x 192.168.0.0/16,10.0.0.0/8` |
+| `-X` or `--exclude-prefix=` | Filters the output to exclude any session data containing addresses within the supplied prefix(es). Multiple prefixes can be supplied as a comma-separated list as with `-S`. |
 | `-p` or `--port=` | Filters the output to include only rows that match the specified port(s). Multiple ports can be provided using a comma-separated list. |
 | `-t` or `--top=` | The `analyze` script will show the top ten results from each category by default. You can change this (higher or lower) by specifying the value using `-t`; e.g.,<br />`-t 50` will show the top 50 highest counts for each category. |
 | `-r` or `--router=` | Runs the script in *online mode*. This indicates the router from which the script should request the session table. |
