@@ -152,7 +152,7 @@ def main(argv):
         elif opt in ("-X", "--exclude-prefix"):
             p = ""
             for p in arg.split(','):
-                prefixFilterList.append(ipaddress.ip_network(p))
+                prefixFilterList.append(ipaddress.ip_network(p, false))
             filterOutPrefix = True
 
     # input validation here
