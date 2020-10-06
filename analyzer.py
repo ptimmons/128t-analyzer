@@ -281,7 +281,11 @@ def main(argv):
     if drawGraph:
         histMax = max(histValues)
         # print("histMax: " + str(histMax))
-        histInterval = int(round(histMax, -1) / histBins)
+        if histMax < 10:
+            histBins = 5
+            histInterval = 2
+        else:
+            histInterval = int(round(histMax, -1) / histBins)
         i = 0
         entry = []
         # seed the histogram
