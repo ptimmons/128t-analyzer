@@ -5,15 +5,17 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
-VERSION = "0.2"
+VERSION = "0.3"
 
 import sys
 import json
 import requests
 import ipaddress
 import getopt
+import math
 from collections import Counter
 from tabulate import tabulate
+from ascii_graph import Pyasciigraph
 
 def isIncluded(list_a, list_b):
     for i in list_a:
@@ -66,18 +68,26 @@ def main(argv):
     filterByPrefix = False
     filterOutPrefix = False
     doGraphQL = True
+    drawGraph = False
+    histBins = 10
+    histMax = 0
+    histInterval = 0
+    histValues = []
+    histList = []
     routerName = ""
     nodeName = ""
     topX = 10
     outfile = ""
 
     try:
-        opts, args = getopt.getopt(argv,"hva:i:n:o:p:r:s:t:x:A:S:X:",["help","version","address=","input=","node=","output=","port=","router=","service=","top=","prefix=","exclude-address=","exclude-service=","exclude-prefix="])
+        opts, args = getopt.getopt(argv,"ghva:b:i:n:o:p:r:s:t:x:A:S:X:",["graph","help","version","address=","bins=","input=","node=","output=","port=","router=","service=","top=","prefix=","exclude-address=","exclude-service=","exclude-prefix="])
     except getopt.GetoptError:
         print('analyzer.py -i <inputfile> -x <excludeIPs>')
         sys.exit(2)
     for opt, arg in opts:
-        if opt in ("-h", "--help"):
+        if opt in ("-g", "--graph"):
+            drawGraph = True
+        elif opt in ("-h", "--help"):
             helptext = """Syntax:
 
   analyzer.py -h 
@@ -90,6 +100,8 @@ def main(argv):
              write session table back into a space-delimited file (can be read in later using '-i'). This is helpful for
              use with extremely busy systems, where it is impractical to repeatedly query the system's session table
              using GraphQL
+     -g, --graph:
+             produces a histogram output rather than tabular output, grouping flows by expiry time; useful for tuning session-type timers
      -r, --router:
              router name (mandatory when not using -i). Must be run locally on the 128T Conductor, running 4.5.0 or newer
      -n, --node:
@@ -114,6 +126,8 @@ def main(argv):
              will filter the results to include only those containing the port(s) specified as a comma-separated list
      -t, --top:
              (default: 10) sets the number of entries to display per category
+     -b, --bins:
+             (default: 10) when producing a histogram, the default number of bins is ten; using this parameter can override that default
 """
             print(helptext)
             sys.exit()
@@ -154,6 +168,8 @@ def main(argv):
             for p in arg.split(','):
                 prefixFilterList.append(ipaddress.ip_network(p, False))
             filterOutPrefix = True
+        elif opt in ("-b", "--bins"):
+            histBins = int(arg)
 
     # input validation here
     if doGraphQL and not routerName:
@@ -241,6 +257,8 @@ def main(argv):
             if (withinPrefix(session[7], prefixFilterList) or withinPrefix(session[9], prefixFilterList)):
                 continue
         svcDestinations.append(session[2])
+        if drawGraph:
+            histValues.append(int(session[14]))
         if session[1] == 'fwd': 
             fwdDestinations.append(session[9])
             if session[6].upper() == "TCP":
@@ -259,6 +277,26 @@ def main(argv):
     cr = Counter(revDestinations)
     ct = Counter(tcpServices)
     cu = Counter(udpServices)
+
+    if drawGraph:
+        histMax = max(histValues)
+        # print("histMax: " + str(histMax))
+        histInterval = int(round(histMax, -1) / histBins)
+        i = 0
+        entry = []
+        # seed the histogram
+        while i < histBins:
+            entry = [str(histInterval * (histBins - 1 - i) + 1) + "-" + str(histInterval * (histBins - i)),0]
+            histList.append(entry)
+            i += 1
+        for x in histValues:
+            myBin = min(histBins - math.ceil(x / histInterval), histBins - 1)
+            # print("bin: " + str(int(math.ceil(x / histInterval))) + ", histValue: " + str(x) + ", myBin: " + str(myBin))
+            histList[myBin][1] += 1
+        graph = Pyasciigraph()
+        for line in graph.graph('Expiry times', histList):
+            print(line)    
+        exit()
 
     output = []
 

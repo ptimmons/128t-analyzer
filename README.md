@@ -77,6 +77,8 @@ There are a bunch of command line options for filtering the dataset returned by 
 | `-n` or `--node=` | When running the script in online mode, this allows you to filter the session table to one node of a multinode router. |
 | `-i` or `--input=` | Runs the script in *offline mode*. This will read the contents of the local file you specify as the argument. |
 | `-o` or `--output=` | Writes a local file with the contents of the session table. Useful when working in online mode, to store a copy of the session table to be re-analyzed using offline mode. This allows for iterative analysis of the data without repeatedly requesting the session table from a busy system. |
+| `-g` or `--graph` | Displays a histogram of the expiry timers for all flows that are part of the output. Useful for identifying traffic patterns to tune `session-type` timers. |
+| `-b` or `--bins` | When using the histogram output, the default is to group the flows into ten bins; this lets you override that value. |
 | `-h` or `--help` | Prints the command syntax to the screen and exits. |
 | `-v` or `--version` | Prints the current version and exits. |
 
@@ -99,7 +101,7 @@ site3-summary       980  10.4.1.123           76  10.0.128.153     1602        8
 site4-summary       980  10.99.98.101         75  10.0.177.136     1558         389      469         514      398
 site5-summary       930  10.101.202.3         74  10.0.22.17       1400        9440      434       23233      344
 site6-summary       914  192.0.2.111          73  10.0.50.203      1037        1801      418        1280      250
-=============================  =======  ==============  =======  =============  =======  ==========  =======  ==========  =======
+==============  =======  ==============  =======  =============  ======  ==========  =======  ==========  =======
 ```
 
 There are ten columns of output: five different categories, and their associated counts. The `analyze` script will show the top ten counts for each category. The table is not read left-to-right, it is read top-to-bottom in column pairs; each column pair stands alone.
