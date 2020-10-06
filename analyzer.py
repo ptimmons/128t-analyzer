@@ -5,7 +5,7 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
-VERSION = "0.2"
+VERSION = "0.3"
 
 import sys
 import json
