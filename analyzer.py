@@ -246,8 +246,8 @@ def main(argv):
             continue
         if filterByPort:
             sessionPorts = []
-            sessionPorts.append(session[8])
-            sessionPorts.append(session[10])
+            sessionPorts.append(str(session[8]))
+            sessionPorts.append(str(session[10]))
             if not isIncluded(portList, sessionPorts):
                 continue
         if filterByPrefix:
