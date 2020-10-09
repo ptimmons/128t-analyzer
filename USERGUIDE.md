@@ -177,9 +177,105 @@ admin@labsystem1.fiedler#
 
 ## Use Case: Identifying Undesirable Traffic
 
+Now we will take a look at one of the remote sites. As always, start with a basic run of the `analyzer.py` application to get an overview of the site:
 
+![site15](images/site15.png)
+
+Here we see that the predominant TCP application in use is port 7680. This is a port used by Microsoft Windows Update Download Optimizer (WUDO), which is a technique used by Microsoft to save WAN bandwidth by having Windows clients download patches and system updates from peers on their LAN. In this case, however, it's hitting the router. Let's filter it to just show the WUDO traffic by using the `-p` switch:
+
+![netbios](images/site15-wudo.png)
+
+Indeed this traffic is being sent out to the data center (via the `rfc1918-prefixes` service, which carries the traffic there) as well as coming inbound *from* the data center using the `site15-summary` service. So we can see that the WUDO traffic, which is ostensibly trying to save WAN bandwidth, is actually exacerbating the WAN bandwidth utilization at two locations.
+
+From here we have several options:
+
+- Create a service that is designed to block that traffic
+- Work with the Windows team at the site to reconfigure the WUDO settings on the workstations
+- Wait it out and let the workstations download their patches from each other
+
+Below is an example service that could block this traffic at all branch sites, using the `router-group` tag `remote-sites`. (You *are* using `router-group` tags, aren't you??)
+
+```
+admin@labsystem1.fiedler# show config running authority service WUDO
+
+config
+
+    authority
+
+        service  WUDO
+            name                  WUDO
+
+            applies-to            router-group
+                type        router-group
+                group-name  remote-sites
+            exit
+            description           "Microsoft Windows Update Download Optimizer"
+
+            transport             tcp
+                protocol    tcp
+
+                port-range  7680
+                    start-port  7680
+                exit
+            exit
+            address               0.0.0.0/0
+
+            access-policy         trusted
+                source      trusted
+                permission  deny
+            exit
+
+            access-policy         guest
+                source      guest
+                permission  deny
+            exit
+            share-service-routes  false
+        exit
+    exit
+exit
+```
 
 ## Use Case: Service Creation
 
+Analyzing network traffic can also yield benefits in developing new *service* definitions. More than just merely blocklists, services can allow important traffic to "rise above the fray" and be given specific policies for treatment; this can include packet marking, route preferences, and aggregate bandwidth constraints.
 
+Let's go back to our head end's baseline analysis:
 
+![basic-operation](images/basic-operation.png)
+
+For this exercise we're going to pluck out 8883/TCP, the second biggest TCP application behind Microsoft SMB:
+
+![mcafee](images/mcafee.png)
+
+With only a handful of exceptions, the McAfee traffic is hitting our control servers in the data center at 172.16.78.150 through .155. Creating a service from this data is a trivial task:
+
+```
+admin@labsystem1.fiedler# show config running authority service McAfee
+
+config
+
+    authority
+
+        service  McAfee
+            name                  McAfee
+            description           "McAfee endpoint management"
+            scope                 private
+            address               172.16.78.150/32
+            address               172.16.78.151/32
+            address               172.16.78.152/32
+            address               172.16.78.153/32
+            address               172.16.78.154/32
+            address               172.16.78.155/32
+
+            access-policy         trusted
+                source      trusted
+                permission  allow
+            exit
+            service-policy        management-m2m
+            share-service-routes  true
+        exit
+    exit
+exit
+```
+
+Here we've defined our service for McAfee traffic, and given it an appropriate `service-policy` to ensure these clients get their security profiles successfully.
