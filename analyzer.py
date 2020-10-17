@@ -185,6 +185,8 @@ def main(argv):
     tcpServices = []
     fwdDestinations = []
     revDestinations = []
+    fwdSources = []
+    revSources = []
     svcDestinations = []
     headers = []
 
@@ -260,13 +262,15 @@ def main(argv):
         if drawGraph:
             histValues.append(int(session[14]))
         if session[1] == 'fwd': 
+            fwdSources.append(session[7])
             fwdDestinations.append(session[9])
             if session[6].upper() == "TCP":
                 tcpServices.append(session[10])
             elif session[6].upper() == "UDP":
                 udpServices.append(session[10])
         else:
-            revDestinations.append(session[7])
+            revSources.append(session[7])
+            revDestinations.append(session[9])
             if session[6].upper() == "TCP":
                 tcpServices.append(session[8])
             elif session[6].upper() == "UDP":
@@ -274,6 +278,8 @@ def main(argv):
 
     cs = Counter(svcDestinations)
     cf = Counter(fwdDestinations)
+    cfs = Counter(fwdSources)
+    crs = Counter(revSources)
     cr = Counter(revDestinations)
     ct = Counter(tcpServices)
     cu = Counter(udpServices)
@@ -313,10 +319,20 @@ def main(argv):
         else:
             unified = unified + list(cs.most_common(topX)[x])
             haveMore = True
+        if len(cfs.most_common(topX)) < (x + 1):
+            unified = unified + [None, None]
+        else:
+            unified = unified + list (cfs.most_common(topX)[x])
+            haveMore = True
         if len(cf.most_common(topX)) < (x + 1):
             unified = unified + [None, None]
         else:
             unified = unified + list(cf.most_common(topX)[x])
+            haveMore = True
+        if len(crs.most_common(topX)) < (x + 1):
+            unified = unified + [None, None]
+        else:
+            unified = unified + list(crs.most_common(topX)[x])
             haveMore = True
         if len(cr.most_common(topX)) < (x + 1):
             unified = unified + [None, None]
@@ -335,7 +351,7 @@ def main(argv):
         if (not haveMore):
             break
         output.append(unified)
-    tblHeadings = ['Service Name', 'Count', 'Fwd Dest', 'Count', 'Rev Dest', 'Count', 'TCP Port', 'Count', 'UDP Port', 'Count']
+    tblHeadings = ['Service Name', 'Count', 'Fwd Src', 'Count', 'Fwd Dest', 'Count', 'Rev Src', 'Count', 'Rev Dest', 'Count', 'TCP Port', 'Count', 'UDP Port', 'Count']
     print(tabulate(output, tblHeadings, tablefmt="rst"))
     if outfile:
         with open(outfile, 'w') as file:
