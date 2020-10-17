@@ -31,8 +31,6 @@ This will produce tabular data that shows "top ten lists" for the most popular s
 > For example: when a client on the LAN of a branch location sends a packet to its local 128T, the forward flow will have the client's IP address as the source, and the destination it's targeting as the destination. Presuming he branch router forwards this using SVR to a head end router at a data center, the first packet received by the data center router will have the branch 128T device's *waypoint* as its source, and its own waypoint as the destination for the forward flow.
 >
 > After the data center router forwards that packet on to the server, the reverse packet comes back from the server with its address as the source and the client's (LAN) address as the destination. This is what will populate the source and destination IP addresses of the reverse flow, respectively. This is sent over SVR to the branch 128T, *which will see the waypoint addresses as the source and destination address of the reverse flow*.
->
-> When accumulating "forward" and "reverse" destinations, the `analyzer.py` script will tabulate the destination addresses for forward flows, and the source addresses for reverse flows. Thus, on branch routers where the majority of traffic is generated toward the data center, the forward destinations are much more relevant; likewise, on data center routers that are the aggregation point for branch traffic, the reverse destinations are typically more relevant.
 
 The tabular data shown by `analyzer.py` will resemble the following:
 
