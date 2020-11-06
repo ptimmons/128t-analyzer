@@ -86,31 +86,15 @@ There are a bunch of command line options for filtering the dataset returned by 
 
 Below is the sample output against a fictional head end router, in order to discuss how to interpret the output. (Note: familiarity with the topology and the service configuration is very helpful here, but not mandatory.)
 
-```
-[root@labsystem1 ~]# analyzer.py -r headend -o headend.txt
-==============  =======  ==============  =======  =============  ======  ==========  =======  ==========  =======
-Service Name      Count  Fwd Dest          Count  Rev Dest        Count    TCP Port    Count    UDP Port    Count
-==============  =======  ==============  =======  =============  ======  ==========  =======  ==========  =======
-dc-default        59262  10.10.10.10       32389  10.0.128.150     2092        8883    10979         137     1817
-datacenter-app12   7360  203.0.113.128      6393  10.0.128.152     1954         445     5119         902     1661
-internet           2720  10.1.123.222        500  10.0.128.151     1812       10123     3316         123     1135
-site1-summary      1408  10.2.36.11          103  10.0.128.155     1797         443     2352          53      761
-datacenter-app551  1098  10.4.55.101         101  10.0.121.137     1766        1433     2037         500      601
-site2-summary      1004  10.5.102.222         90  10.0.128.154     1746          80     1820        1813      508
-site3-summary       980  10.4.1.123           76  10.0.128.153     1602        8543      486         161      457
-site4-summary       980  10.99.98.101         75  10.0.177.136     1558         389      469         514      398
-site5-summary       930  10.101.202.3         74  10.0.22.17       1400        9440      434       23233      344
-site6-summary       914  192.0.2.111          73  10.0.50.203      1037        1801      418        1280      250
-==============  =======  ==============  =======  =============  ======  ==========  =======  ==========  =======
-```
+![basic-operation](images/basic-operation.png)
 
-There are ten columns of output: five different categories, and their associated counts. The `analyze` script will show the top ten counts for each category. The table is not read left-to-right, it is read top-to-bottom in column pairs; each column pair stands alone.
+There are fourteen columns of output: seven different categories, and their associated counts. By default, the `analyze` script will show the top ten counts for each category. The table is not read left-to-right, it is read top-to-bottom in column pairs; each column pair stands alone.
 
 The **Service Name** column tabulates the popularity of the various services in the session table. In this sample output we see the vast majority of the sessions are built using the `dc-default` service.
 
-The **Fwd Dest** column tabulates the most common IP addresses present in the **Dest IP** column of *forward flows* from the session table. For sessions that are "inbound" from this router's point of view – that is, sessions that originated at a remote 128T and are arriving on this router using SVR – this will usually be the *waypoint address(es)* of the target router. An example of this in the table above is the `dc-default` service; this is used by remote sites to target resources within the data center. So all of these sessions were created by branch locations and sent to the head end over SVR. For sessions that are "outbound" from this router's point of view, it will be the actual destination addresses at the remote sites. An example of this from the table above are the `site-summary` services, where clients on the head end's LAN are targeting the remote sites over SVR.
+The **Fwd Src** and **Fwd Dest** columns tabulates the most common IP addresses present in the **Source IP** and **Dest IP** columns of *forward flows* from the session table. For sessions that are "inbound" from this router's point of view – that is, sessions that originated at a remote 128T and are arriving on this router using SVR – this will usually be the *waypoint address(es)* of the two routers. An example of this in the table above is the `rfc1918-prefixes` service; this is used by remote sites to target resources within the data center. So all of these sessions were created by branch locations and sent to the head end over SVR. For sessions that are "outbound" from this router's point of view, it will be the actual destination addresses at the remote sites. An example of this from the table above are the `siteXX-summary` services, where clients on the head end's LAN are targeting the remote sites over SVR.
 
-The **Rev Dest** column tabulates the most common IP addresses present in the **Src IP** column of *reverse flows* from the session table. For inbound sessions these will be the targets on the "LAN" of the router. For outbound sessions these will be the actual address at the remote location.
+The **Rev Src** and **Rev Dest** column tabulates the most common IP addresses present in the **Src IP** and **Dest IP** columns of *reverse flows* from the session table. For inbound sessions these will be the targets on the "LAN" of the router. For outbound sessions these will be the actual address at the remote location.
 
 The **TCP Port** and **UDP Port** columns tabulate the most common TCP and UDP port numbers found in the table. These can be matched against well-known port lists (e.g., the contents of `/etc/services` on any Linux host, or online databases such as [SANS Internet Storm Center](https://isc.sans.edu/port.html)). Note that the table will invariably include waypoint ports; these are typically in the range of 16385-65535 and should be fairly readily identifiable.
 
