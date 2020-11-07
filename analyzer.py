@@ -206,14 +206,26 @@ def main(argv):
                 sessions.append(session)
     else:
         with open(sessionFile) as fin:
-            for line in fin:
-                if line == "\n":
-                    continue
-                sessionEntry = line.split()
-                if sessionEntry[0][0] not in "0123456789abcdef":
-                    # skip over anything that doesn't look like a session ID
-                    continue
-                sessions.append(sessionEntry)
+            if sessionFile.endswith('json'):
+                # this is a total hack...
+                # assume it's a profiles dataset because the filename ends with json
+                profiles = json.loads(fin.read())
+                for address in profiles:
+                    for sessionID in profiles[address]:
+                        jsession = profiles[address][sessionID]
+                        jsession['sourceIp'] = address
+                        jsession['sessionUuid'] = sessionID
+                        session = jsonToList(jsession)
+                        sessions.append(session)
+            else:
+                for line in fin:
+                    if line == "\n":
+                        continue
+                    sessionEntry = line.split()
+                    if sessionEntry[0][0] not in "0123456789abcdef":
+                        # skip over anything that doesn't look like a session ID
+                        continue
+                    sessions.append(sessionEntry)
 
     """
     This is where we tabulate stuff. For reference, the field mappings are:
