@@ -235,6 +235,10 @@ def main(argv):
         if args.exclude_address is not None and isIncluded(args.exclude_address, session):
             continue
         if args.port is not None:
+            print("args.port = " + str(args.port))
+            print("session[8]" + str(session[8]))
+            print("session[10]" + str(session[10]))
+            exit()
             if not (session[8] in args.port or session[10] in args.port):
                 continue
         if filterByPrefix:
