@@ -91,7 +91,7 @@ def main(argv):
     args = parser.parse_args()
 
 
-    excludeList = args.exclude-service
+    excludeList = args.exclude_service
     serviceList = []
     addressList = []
     prefixList = []
