@@ -11,7 +11,7 @@ import sys
 import json
 import requests
 import ipaddress
-import getopt
+import argparse
 import math
 from collections import Counter
 from tabulate import tabulate
@@ -54,6 +54,8 @@ def convertToString(session):
     return result
 
 def main(argv):
+
+    parser = argparse.ArgumentParser(description = '128T session table analyzer')
 
     excludeList = []
     serviceList = []
