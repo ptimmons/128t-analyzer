@@ -232,8 +232,9 @@ def main(argv):
             continue
         if filterByAddress and not isIncluded(addressList, session):
             continue
-        if not args.exclude_list and isIncluded(args.exclude_list, session):
-            continue
+        if not args.exclude_list:
+            if isIncluded(args.exclude_list, session):
+                continue
         if filterByPort:
             sessionPorts = []
             sessionPorts.append(str(session[8]))
