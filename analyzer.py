@@ -85,11 +85,12 @@ def main(argv):
 
     parser.add_argument('--port', '-p', metavar='+', type = int, help = 'limit results to those that reference the specific port(s)')
 
-    parser.add_argument('--top', '-t', metavar = '<n>', type = int, help = 'show top <n> values in tabular output (default: 10)')
-    parser.add_argument('--bin', '-b', metavar = '<n>', type = int, help = 'render histogram with <n> bins (default: 10)')
+    parser.add_argument('--top', '-t', metavar = '<n>', type = int, 
+                        default = 10, help = 'show top <n> values in tabular output (default: 10)')
+    parser.add_argument('--bin', '-b', metavar = '<n>', type = int, 
+                        default = 10, help = 'render histogram with <n> bins (default: 10)')
 
     args = parser.parse_args()
-
 
     excludeList = args.exclude_service
     serviceList = []
@@ -111,7 +112,6 @@ def main(argv):
     histValues = []
     histList = []
     nodeName = ""
-    topX = 10
     outfile = ""
 
     """Syntax:
@@ -299,44 +299,44 @@ def main(argv):
 
     output = []
 
-    for x in range (0,topX):
+    for x in range (0,args.top):
         unified = []
         haveMore = True
-        if len(cs.most_common(topX)) < (x + 1):
+        if len(cs.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
             haveMore = False
         else:
-            unified = unified + list(cs.most_common(topX)[x])
+            unified = unified + list(cs.most_common(args.top)[x])
             haveMore = True
-        if len(cfs.most_common(topX)) < (x + 1):
+        if len(cfs.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list (cfs.most_common(topX)[x])
+            unified = unified + list (cfs.most_common(args.top)[x])
             haveMore = True
-        if len(cf.most_common(topX)) < (x + 1):
+        if len(cf.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list(cf.most_common(topX)[x])
+            unified = unified + list(cf.most_common(args.top)[x])
             haveMore = True
-        if len(crs.most_common(topX)) < (x + 1):
+        if len(crs.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list(crs.most_common(topX)[x])
+            unified = unified + list(crs.most_common(args.top)[x])
             haveMore = True
-        if len(cr.most_common(topX)) < (x + 1):
+        if len(cr.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list(cr.most_common(topX)[x])
+            unified = unified + list(cr.most_common(args.top)[x])
             haveMore = True
-        if len(ct.most_common(topX)) < (x + 1):
+        if len(ct.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list(ct.most_common(topX)[x])
+            unified = unified + list(ct.most_common(args.top)[x])
             haveMore = True
-        if len(cu.most_common(topX)) < (x + 1):
+        if len(cu.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list(cu.most_common(topX)[x])
+            unified = unified + list(cu.most_common(args.top)[x])
         if (not haveMore):
             break
         output.append(unified)
