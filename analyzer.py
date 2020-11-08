@@ -99,19 +99,11 @@ def main(argv):
 
     args = parser.parse_args()
 
-    prefixList = []
-    serviceFilterList = []
-    prefixFilterList = []
-    portList = []
-    filterByPort = False
-    filterByPrefix = False
-    filterOutPrefix = False
     histBins = args.bin
     histMax = 0
     histInterval = 0
     histValues = []
     histList = []
-    outfile = ""
 
     """Syntax:
 
@@ -228,20 +220,23 @@ def main(argv):
             continue
         if args.service is not None and (session[2] not in args.service):
             continue
-        if (session[2] in serviceFilterList):
+        if args.exclude_service is not None and (session[2] in args.exclude_service):
             continue
         if args.address is not None and not isIncluded(args.address, session):
             continue
         if args.exclude_address is not None and isIncluded(args.exclude_address, session):
             continue
         if args.port is not None:
-            if not (session[8] in args.port or session[10] in args.port):
+            if not (session[8] in args.port or 
+                    session[10] in args.port):
                 continue
-        if filterByPrefix:
-            if not (withinPrefix(session[7],prefixList) or withinPrefix(session[9],prefixList)):
+        if args.prefix is not None:
+            if not (withinPrefix(session[7],args.prefix) or 
+                    withinPrefix(session[9],args.prefix)):
                 continue
-        if filterOutPrefix:
-            if (withinPrefix(session[7], prefixFilterList) or withinPrefix(session[9], prefixFilterList)):
+        if args.exclude_prefix is not None:
+            if (withinPrefix(session[7], args.exclude_prefix) or 
+                withinPrefix(session[9], args.exclude_prefix)):
                 continue
         svcDestinations.append(session[2])
         if args.graph:
@@ -338,8 +333,8 @@ def main(argv):
         output.append(unified)
     tblHeadings = ['Service Name', 'Count', 'Fwd Src', 'Count', 'Fwd Dest', 'Count', 'Rev Src', 'Count', 'Rev Dest', 'Count', 'TCP Port', 'Count', 'UDP Port', 'Count']
     print(tabulate(output, tblHeadings, tablefmt="rst"))
-    if outfile:
-        with open(outfile, 'w') as file:
+    if args.output is not None:
+        with open(args.output, 'w') as file:
             for ses in sessions:
                 file.write(convertToString(ses))
 
