@@ -232,7 +232,7 @@ def main(argv):
             continue
         if filterByAddress and not isIncluded(addressList, session):
             continue
-        if not args.exclude_address and isIncluded(args.exclude_address, session):
+        if args.exclude_address is not None and isIncluded(args.exclude_address, session):
             continue
         if filterByPort:
             sessionPorts = []
