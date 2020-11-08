@@ -92,7 +92,7 @@ def main(argv):
     args = parser.parse_args()
 
 
-    excludeList = []
+    excludeList = args.exclude-service
     serviceList = []
     addressList = []
     prefixList = []
@@ -116,95 +116,47 @@ def main(argv):
     topX = 10
     outfile = ""
 
-    try:
-        opts, args = getopt.getopt(argv,"ghva:b:i:n:o:p:r:s:t:x:A:S:X:",["graph","help","version","address=","bins=","input=","node=","output=","port=","router=","service=","top=","prefix=","exclude-address=","exclude-service=","exclude-prefix="])
-    except getopt.GetoptError:
-        print('analyzer.py -i <inputfile> -x <excludeIPs>')
-        sys.exit(2)
-    for opt, arg in opts:
-        elif opt in ("-h", "--help"):
-            helptext = """Syntax:
+    """Syntax:
 
-  analyzer.py -h 
-  analyzer.py -r <routerName> [-n nodeName] [-a <addressList> -A <addressList> -s <serviceList> -S <serviceList> -t <top>]
-  analyzer.py -i <inputFile> [-a <addressList> -A <addressList> -s <serviceList> -S <serviceList> -t <top>]
+      analyzer.py -h 
+      analyzer.py -r <routerName> [-n nodeName] [-a <addressList> -A <addressList> -s <serviceList> -S <serviceList> -t <top>]
+      analyzer.py -i <inputFile> [-a <addressList> -A <addressList> -s <serviceList> -S <serviceList> -t <top>]
 
-     -i, --input:
-             read session table contents from a file (expected format is as provided by the PCLI's 'show sessions')
-     -o, --output:
-             write session table back into a space-delimited file (can be read in later using '-i'). This is helpful for
-             use with extremely busy systems, where it is impractical to repeatedly query the system's session table
-             using GraphQL
-     -g, --graph:
-             produces a histogram output rather than tabular output, grouping flows by expiry time; useful for tuning session-type timers
-     -r, --router:
-             router name (mandatory when not using -i). Must be run locally on the 128T Conductor, running 4.5.0 or newer
-     -n, --node:
-             node name (optional; when excluded, analyzer will collect all sessions from all nodes in the specified router)
-     -h, --help:
-             prints this help text
-     -v, --version:
-             prints the current version number
-     -a, --address:
-             when followed by a comma-separated list of addresses, will filter the results to only entries containing that address
-     -A, --exclude-address:
-             when followed by a comma-separated list of addresses, will filter out any results containing that address
-     -s, --service:
-             when followed by a comma-separated list of service names, will filter the results to only entries containing that service
-     -S, --exclude-service:
-             will filter the results and exclude any services supplied as a comma-separated list
-     -x, --prefix:
-             when followed by a comma-separated list of prefixes, will filter the results to only include sessions with addresses within that prefix
-     -X, --exclude-prefix:
-             will filter the results to exclude any sessions containing IP addresses within the prefixes supplied as a comma-separated list
-     -p, --port:
-             will filter the results to include only those containing the port(s) specified as a comma-separated list
-     -t, --top:
-             (default: 10) sets the number of entries to display per category
-     -b, --bins:
-             (default: 10) when producing a histogram, the default number of bins is ten; using this parameter can override that default
-"""
-            print(helptext)
-            sys.exit()
-        elif opt in ("-v", "--version"):
-            print("analyzer version " + VERSION)
-            sys.exit()
-        elif opt in ("-i", "--input"):
-            sessionFile = arg
-            doGraphQL = False
-        elif opt in ("-A", "--exclude-address"):
-            excludeList = arg.split(',')
-        elif opt in ("-s", "--service"):
-            serviceList = arg.split(',')
-            filterByService = True
-        elif opt in ("-a", "--address"):
-            addressList = arg.split(',')
-            filterByAddress = True
-        elif opt in ("-p", "--port"):
-            portList = arg.split(',')
-            filterByPort = True
-        elif opt in ("-r", "--router"):
-            routerName = arg
-        elif opt in ("-n", "--node"):
-            nodeName = arg
-        elif opt in ("-o", "--output"):
-            outfile = arg
-        elif opt in ("-S", "--exclude-service"):
-            serviceFilterList = arg.split(",")
-        elif opt in ("-t", "--top"):
-            topX = int(arg)
-        elif opt in ("-x", "--prefix"):
-            p = ""
-            for p in arg.split(','):
-                prefixList.append(ipaddress.ip_network(p, False))
-            filterByPrefix = True
-        elif opt in ("-X", "--exclude-prefix"):
-            p = ""
-            for p in arg.split(','):
-                prefixFilterList.append(ipaddress.ip_network(p, False))
-            filterOutPrefix = True
-        elif opt in ("-b", "--bins"):
-            histBins = int(arg)
+         -i, --input:
+                 read session table contents from a file (expected format is as provided by the PCLI's 'show sessions')
+         -o, --output:
+                 write session table back into a space-delimited file (can be read in later using '-i'). This is helpful for
+                 use with extremely busy systems, where it is impractical to repeatedly query the system's session table
+                 using GraphQL
+         -g, --graph:
+                 produces a histogram output rather than tabular output, grouping flows by expiry time; useful for tuning session-type timers
+         -r, --router:
+                 router name (mandatory when not using -i). Must be run locally on the 128T Conductor, running 4.5.0 or newer
+         -n, --node:
+                 node name (optional; when excluded, analyzer will collect all sessions from all nodes in the specified router)
+         -h, --help:
+                 prints this help text
+         -v, --version:
+                 prints the current version number
+         -a, --address:
+                 when followed by a comma-separated list of addresses, will filter the results to only entries containing that address
+         -A, --exclude-address:
+                 when followed by a comma-separated list of addresses, will filter out any results containing that address
+         -s, --service:
+                 when followed by a comma-separated list of service names, will filter the results to only entries containing that service
+         -S, --exclude-service:
+                 will filter the results and exclude any services supplied as a comma-separated list
+         -x, --prefix:
+                 when followed by a comma-separated list of prefixes, will filter the results to only include sessions with addresses within that prefix
+         -X, --exclude-prefix:
+                 will filter the results to exclude any sessions containing IP addresses within the prefixes supplied as a comma-separated list
+         -p, --port:
+                 will filter the results to include only those containing the port(s) specified as a comma-separated list
+         -t, --top:
+                 (default: 10) sets the number of entries to display per category
+         -b, --bins:
+                 (default: 10) when producing a histogram, the default number of bins is ten; using this parameter can override that default
+    """
 
     # input validation here
     if doGraphQL and not routerName:
