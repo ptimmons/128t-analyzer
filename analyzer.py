@@ -60,8 +60,7 @@ def main(argv):
     get_data_source_group = parser.add_mutually_exclusive_group(required = True)
     get_data_source_group.add_argument('--input', '-i', metavar = '<filename>',
                                        type = str, help = "use <filename> for data source")
-    get_data_source_group.add_argument('--router', '-r', action = store_true, 
-                                       metavar = "<router>", type = str, 
+    get_data_source_group.add_argument('--router', '-r', metavar = "<router>", type = str, 
                                        help = "retrieve sessions from router <router>")
 
     parser.add_argument('--node', '-n', metavar = '<nodename>', type = str, help = 'limit results to the specific node')
