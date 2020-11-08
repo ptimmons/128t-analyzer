@@ -32,7 +32,7 @@ def withinPrefix(address, networkList):
 
 def makeQuery(routerName, nodeName, last):
     qry = '{allRouters(name: "' + routerName + '") {nodes {nodes'
-    if nodeName is not "":
+    if nodeName is not None:
         qry += '(name: "' + nodeName + '")'
     qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp natPort networkInterfaceName protocol serviceName sessionUuid sourceIp sourcePort startTime tenant vlan} pageInfo { endCursor hasNextPage }}}}}}}'
     # print(qry)
@@ -92,24 +92,18 @@ def main(argv):
 
     args = parser.parse_args()
 
-    addressList = []
     prefixList = []
     serviceFilterList = []
     prefixFilterList = []
     portList = []
-    filterByService = False
-    filterByAddress = False
     filterByPort = False
     filterByPrefix = False
     filterOutPrefix = False
-    doGraphQL = True
-    drawGraph = False
-    histBins = 10
+    histBins = args.bin
     histMax = 0
     histInterval = 0
     histValues = []
     histList = []
-    nodeName = ""
     outfile = ""
 
     """Syntax:
@@ -169,7 +163,7 @@ def main(argv):
         done = False
         url = "http://127.0.0.1:31517/api/v1/graphql"
         while not done:
-            query = makeQuery(args.router, nodeName, last)
+            query = makeQuery(args.router, args.node, last)
             raw = requests.post(url, json = {'query': query}, headers = headers)
             loopSessions = json.loads(raw.text)
             if loopSessions['data']['allRouters']['nodes'][0]['nodes']['nodes'][0]['flowEntries']['pageInfo']['hasNextPage']:
@@ -229,15 +223,12 @@ def main(argv):
             continue
         if (session[2] in serviceFilterList):
             continue
-        if filterByAddress and not isIncluded(addressList, session):
+        if args.address is not None and not isIncluded(args.address, session):
             continue
         if args.exclude_address is not None and isIncluded(args.exclude_address, session):
             continue
-        if filterByPort:
-            sessionPorts = []
-            sessionPorts.append(str(session[8]))
-            sessionPorts.append(str(session[10]))
-            if not isIncluded(portList, sessionPorts):
+        if args.port is not None:
+            if not (session[8] in args.port or session[10] in args.port):
                 continue
         if filterByPrefix:
             if not (withinPrefix(session[7],prefixList) or withinPrefix(session[9],prefixList)):
@@ -246,7 +237,7 @@ def main(argv):
             if (withinPrefix(session[7], prefixFilterList) or withinPrefix(session[9], prefixFilterList)):
                 continue
         svcDestinations.append(session[2])
-        if drawGraph:
+        if args.graph:
             histValues.append(int(session[14]))
         if session[1] == 'fwd': 
             fwdSources.append(session[7])
@@ -271,7 +262,7 @@ def main(argv):
     ct = Counter(tcpServices)
     cu = Counter(udpServices)
 
-    if drawGraph:
+    if args.graph:
         histMax = max(histValues)
         # print("histMax: " + str(histMax))
         if histMax < 10:
