@@ -66,8 +66,8 @@ def main(argv):
     parser.add_argument('--node', '-n', metavar = '<nodename>', type = str, help = 'limit results to the specific node')
     parser.add_argument('--output', '-o', metavar = '<filename>', help = 'store session table in a local file for future re-use')
 
-    parser.add_argument('--graph', '-g', action = store_true, help = 'draw histogram instead of tabular output')
-    parser.add_argument('--version', '-v', action = store_true, help = 'print version information and exit')
+    parser.add_argument('--graph', '-g', action = 'store_true', help = 'draw histogram instead of tabular output')
+    parser.add_argument('--version', '-v', action = 'store_true', help = 'print version information and exit')
 
     parser.add_argument('--address', '-a', nargs = '+',
                         help = 'limit results to only include specified addresses')
