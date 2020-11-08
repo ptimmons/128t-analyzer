@@ -92,7 +92,6 @@ def main(argv):
 
     args = parser.parse_args()
 
-    serviceList = []
     addressList = []
     prefixList = []
     serviceFilterList = []
@@ -226,7 +225,7 @@ def main(argv):
     for session in sessions:
         if len(session) < 10:
             continue
-        if filterByService and (session[2] not in serviceList):
+        if args.service is not None and (session[2] not in args.service):
             continue
         if (session[2] in serviceFilterList):
             continue
