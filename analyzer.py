@@ -92,7 +92,6 @@ def main(argv):
 
     args = parser.parse_args()
 
-    excludeList = args.exclude_service
     serviceList = []
     addressList = []
     prefixList = []
@@ -233,7 +232,7 @@ def main(argv):
             continue
         if filterByAddress and not isIncluded(addressList, session):
             continue
-        if isIncluded(excludeList, session):
+        if not args.exclude_list and isIncluded(args.exclude_list, session):
             continue
         if filterByPort:
             sessionPorts = []
