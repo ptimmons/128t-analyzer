@@ -5,7 +5,7 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
-VERSION = "0.3"
+VERSION = "0.4"
 
 import sys
 import json
@@ -57,6 +57,41 @@ def main(argv):
 
     parser = argparse.ArgumentParser(description = '128T session table analyzer')
 
+    get_data_source_group = parser.add_mutually_exclusive_group(required = True)
+    get_data_source_group.add_argument('--input', '-i', metavar = '<filename>',
+                                       type = str, help = "use <filename> for data source")
+    get_data_source_group.add_argument('--router', '-r', action = store_true, 
+                                       metavar = "<router>", type = str, 
+                                       help = "retrieve sessions from router <router>")
+
+    parser.add_argument('--node', '-n', metavar = '<nodename>', type = str, help = 'limit results to the specific node')
+    parser.add_argument('--output', '-o', metavar = '<filename>', help = 'store session table in a local file for future re-use')
+
+    parser.add_argument('--graph', '-g', action = store_true, help = 'draw histogram instead of tabular output')
+    parser.add_argument('--version', '-v', action = store_true, help = 'print version information and exit')
+
+    parser.add_argument('--address', '-a', nargs = '+',
+                        help = 'limit results to only include specified addresses')
+    parser.add_argument('--exclude-address', '-A', nargs = '+', 
+                        help = 'IP addresses to filter out from results')
+    
+    service_group = parser.add_mutually_exclusive_group()
+    service_group.add_argument('--service', '-s', nargs = '+',
+                               help = 'limit results to specified services')
+    service_group.add_argument('--exclude-service', '-S', nargs = '+',
+                               help = 'exclude specified services from results')
+
+    parser.add_argument('--prefix', '-x', nargs = '+', help = 'limit results to only those that contain the prefix(es)')
+    parser.add_argument('--exclude-prefix', '-X', nargs = '+', help = 'filter results that include addresses within the prefix(es)')
+
+    parser.add_argument('--port', '-p', metavar='+', type = int, help = 'limit results to those that reference the specific port(s)')
+
+    parser.add_argument('--top', '-t', metavar = '<n>', type = int, help = 'show top <n> values in tabular output (default: 10)')
+    parser.add_argument('--bin', '-b', metavar = '<n>', type = int, help = 'render histogram with <n> bins (default: 10)')
+
+    args = parser.parse_args()
+
+
     excludeList = []
     serviceList = []
     addressList = []
@@ -87,8 +122,6 @@ def main(argv):
         print('analyzer.py -i <inputfile> -x <excludeIPs>')
         sys.exit(2)
     for opt, arg in opts:
-        if opt in ("-g", "--graph"):
-            drawGraph = True
         elif opt in ("-h", "--help"):
             helptext = """Syntax:
 
