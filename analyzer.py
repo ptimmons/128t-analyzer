@@ -110,7 +110,6 @@ def main(argv):
     histInterval = 0
     histValues = []
     histList = []
-    routerName = ""
     nodeName = ""
     topX = 10
     outfile = ""
@@ -157,14 +156,6 @@ def main(argv):
                  (default: 10) when producing a histogram, the default number of bins is ten; using this parameter can override that default
     """
 
-    # input validation here
-    if doGraphQL and not routerName:
-        print("Error: must specify a router name when using GraphQL.")
-        sys.exit()
-    if not doGraphQL and routerName:
-        print("Error: cannot use both input file and GraphQL.")
-        sys.exit()
-
     last = ""
     sessions = []
     udpServices = []
@@ -176,11 +167,11 @@ def main(argv):
     svcDestinations = []
     headers = []
 
-    if doGraphQL:
+    if args.router:
         done = False
         url = "http://127.0.0.1:31517/api/v1/graphql"
         while not done:
-            query = makeQuery(routerName, nodeName, last)
+            query = makeQuery(args.router, nodeName, last)
             raw = requests.post(url, json = {'query': query}, headers = headers)
             loopSessions = json.loads(raw.text)
             if loopSessions['data']['allRouters']['nodes'][0]['nodes']['nodes'][0]['flowEntries']['pageInfo']['hasNextPage']:
