@@ -34,7 +34,10 @@ def makeQuery(routerName, nodeName, last):
     qry = '{allRouters(name: "' + routerName + '") {nodes {nodes'
     if nodeName is not None:
         qry += '(name: "' + nodeName + '")'
-    qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp natPort networkInterfaceName protocol serviceName sessionUuid sourceIp sourcePort startTime tenant vlan} pageInfo { endCursor hasNextPage }}}}}}}'
+    qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort ' + 
+           'deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp ' +
+           'natPort networkInterfaceName protocol serviceName sessionUuid sourceIp ' +
+           'sourcePort startTime tenant vlan} pageInfo { endCursor hasNextPage }}}}}}}'
     # print(qry)
     return qry
 
@@ -43,7 +46,12 @@ def jsonToList(jSession):
         direction = "fwd"
     else:
         direction = "rev"
-    lSession = [jSession['sessionUuid'], direction, jSession['serviceName'], jSession['tenant'], jSession['networkInterfaceName'], jSession['vlan'], jSession['protocol'], jSession['sourceIp'], jSession['sourcePort'], jSession['destIp'], jSession['destPort'], jSession['natIp'], jSession['natPort'], jSession['encrypted'], jSession['inactivityTimeout'], jSession['startTime']]
+    lSession = [jSession['sessionUuid'], direction, jSession['serviceName'], 
+                jSession['tenant'], jSession['networkInterfaceName'], jSession['vlan'], 
+                jSession['protocol'], jSession['sourceIp'], jSession['sourcePort'], 
+                jSession['destIp'], jSession['destPort'], jSession['natIp'], 
+                jSession['natPort'], jSession['encrypted'], jSession['inactivityTimeout'], 
+                jSession['startTime']]
     return lSession
 
 def convertToString(session):
@@ -62,17 +70,15 @@ def main(argv):
                                        type = str, help = "use <filename> for data source")
     get_data_source_group.add_argument('--router', '-r', metavar = "<router>", type = str, 
                                        help = "retrieve sessions from router <router>")
+    get_data_source_group.add_argument('--version', '-v', action = 'store_true', 
+                                       help = 'print version information and exit')
 
     parser.add_argument('--node', '-n', metavar = '<nodename>', type = str, 
                         help = 'limit results to the specific node')
     parser.add_argument('--output', '-o', metavar = '<filename>', 
                         help = 'store session table in a local file for future re-use')
-
     parser.add_argument('--graph', '-g', action = 'store_true', 
                         help = 'draw histogram instead of tabular output')
-    parser.add_argument('--version', '-v', action = 'store_true', 
-                        help = 'print version information and exit')
-
     parser.add_argument('--address', '-a', nargs = '+',
                         help = 'limit results to only include specified addresses')
     parser.add_argument('--exclude-address', '-A', nargs = '+', 
@@ -98,6 +104,10 @@ def main(argv):
                         default = 10, help = 'render histogram with <n> bins (default: 10)')
 
     args = parser.parse_args()
+
+    if args.version:
+        print("analyzer version " + VERSION)
+        exit()
 
     prefixList = []
     if args.prefix is not None:
