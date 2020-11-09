@@ -173,8 +173,8 @@ def main(argv):
                 session = jsonToList(jSession)
                 sessions.append(session)
     else:
-        with open(sessionFile) as fin:
-            if sessionFile.endswith('json'):
+        with open(args.input) as fin:
+            if args.input.endswith('json'):
                 # this is a total hack...
                 # assume it's a profiles dataset because the filename ends with json
                 profiles = json.loads(fin.read())
