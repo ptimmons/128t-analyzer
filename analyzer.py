@@ -5,13 +5,13 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
-VERSION = "0.3"
+VERSION = "0.4"
 
 import sys
 import json
 import requests
 import ipaddress
-import getopt
+import argparse
 import math
 from collections import Counter
 from tabulate import tabulate
@@ -32,9 +32,12 @@ def withinPrefix(address, networkList):
 
 def makeQuery(routerName, nodeName, last):
     qry = '{allRouters(name: "' + routerName + '") {nodes {nodes'
-    if nodeName is not "":
+    if nodeName is not None:
         qry += '(name: "' + nodeName + '")'
-    qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp natPort networkInterfaceName protocol serviceName sessionUuid sourceIp sourcePort startTime tenant vlan} pageInfo { endCursor hasNextPage }}}}}}}'
+    qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort ' + \
+           'deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp ' + \
+           'natPort networkInterfaceName protocol serviceName sessionUuid sourceIp ' + \
+           'sourcePort startTime tenant vlan} pageInfo { endCursor hasNextPage }}}}}}}'
     # print(qry)
     return qry
 
@@ -43,7 +46,12 @@ def jsonToList(jSession):
         direction = "fwd"
     else:
         direction = "rev"
-    lSession = [jSession['sessionUuid'], direction, jSession['serviceName'], jSession['tenant'], jSession['networkInterfaceName'], jSession['vlan'], jSession['protocol'], jSession['sourceIp'], jSession['sourcePort'], jSession['destIp'], jSession['destPort'], jSession['natIp'], jSession['natPort'], jSession['encrypted'], jSession['inactivityTimeout'], jSession['startTime']]
+    lSession = [jSession['sessionUuid'], direction, jSession['serviceName'], 
+                jSession['tenant'], jSession['networkInterfaceName'], jSession['vlan'], 
+                jSession['protocol'], jSession['sourceIp'], jSession['sourcePort'], 
+                jSession['destIp'], jSession['destPort'], jSession['natIp'], 
+                jSession['natPort'], jSession['encrypted'], jSession['inactivityTimeout'], 
+                jSession['startTime']]
     return lSession
 
 def convertToString(session):
@@ -55,129 +63,109 @@ def convertToString(session):
 
 def main(argv):
 
-    excludeList = []
-    serviceList = []
-    addressList = []
+    parser = argparse.ArgumentParser(description = '128T session table analyzer')
+
+    get_data_source_group = parser.add_mutually_exclusive_group(required = True)
+    get_data_source_group.add_argument('--input', '-i', metavar = '<filename>',
+                                       type = str, help = "use <filename> for data source")
+    get_data_source_group.add_argument('--router', '-r', metavar = "<router>", type = str, 
+                                       help = "retrieve sessions from router <router>")
+    get_data_source_group.add_argument('--version', '-v', action = 'store_true', 
+                                       help = 'print version information and exit')
+
+    parser.add_argument('--node', '-n', metavar = '<nodename>', type = str, 
+                        help = 'limit results to the specific node')
+    parser.add_argument('--output', '-o', metavar = '<filename>', 
+                        help = 'store session table in a local file for future re-use')
+    parser.add_argument('--graph', '-g', action = 'store_true', 
+                        help = 'draw histogram instead of tabular output')
+    parser.add_argument('--address', '-a', nargs = '+',
+                        help = 'limit results to only include specified addresses')
+    parser.add_argument('--exclude-address', '-A', nargs = '+', 
+                        help = 'IP addresses to filter out from results')
+    
+    service_group = parser.add_mutually_exclusive_group()
+    service_group.add_argument('--service', '-s', nargs = '+',
+                               help = 'limit results to specified services')
+    service_group.add_argument('--exclude-service', '-S', nargs = '+',
+                               help = 'exclude specified services from results')
+
+    parser.add_argument('--prefix', '-x', nargs = '+', 
+                        help = 'limit results to only those that contain the prefix(es)')
+    parser.add_argument('--exclude-prefix', '-X', nargs = '+', 
+                        help = 'filter results that include addresses within the prefix(es)')
+
+    parser.add_argument('--port', '-p', metavar='+', nargs = '+', type = int, 
+                        help = 'limit results to those that reference the specific port(s)')
+
+    parser.add_argument('--top', '-t', metavar = '<n>', type = int, 
+                        default = 10, help = 'show top <n> values in tabular output (default: 10)')
+    parser.add_argument('--bin', '-b', metavar = '<n>', type = int, 
+                        default = 10, help = 'render histogram with <n> bins (default: 10)')
+
+    args = parser.parse_args()
+
+    if args.version:
+        print("analyzer version " + VERSION)
+        exit()
+
     prefixList = []
-    serviceFilterList = []
-    prefixFilterList = []
-    portList = []
-    filterByService = False
-    filterByAddress = False
-    filterByPort = False
-    filterByPrefix = False
-    filterOutPrefix = False
-    doGraphQL = True
-    drawGraph = False
-    histBins = 10
+    if args.prefix is not None:
+        for pfx in args.prefix:
+            prefixList.append(ipaddress.ip_network(pfx, False))
+
+    excludePrefixList = []
+    if args.exclude_prefix is not None:
+        for pfx in args.exclude_prefix:
+            excludePrefixList.append(ipaddress.ip_network(pfx, False))
+
+    histBins = args.bin
     histMax = 0
     histInterval = 0
     histValues = []
     histList = []
-    routerName = ""
-    nodeName = ""
-    topX = 10
-    outfile = ""
 
-    try:
-        opts, args = getopt.getopt(argv,"ghva:b:i:n:o:p:r:s:t:x:A:S:X:",["graph","help","version","address=","bins=","input=","node=","output=","port=","router=","service=","top=","prefix=","exclude-address=","exclude-service=","exclude-prefix="])
-    except getopt.GetoptError:
-        print('analyzer.py -i <inputfile> -x <excludeIPs>')
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt in ("-g", "--graph"):
-            drawGraph = True
-        elif opt in ("-h", "--help"):
-            helptext = """Syntax:
+    """Syntax:
 
-  analyzer.py -h 
-  analyzer.py -r <routerName> [-n nodeName] [-a <addressList> -A <addressList> -s <serviceList> -S <serviceList> -t <top>]
-  analyzer.py -i <inputFile> [-a <addressList> -A <addressList> -s <serviceList> -S <serviceList> -t <top>]
+      analyzer.py -h 
+      analyzer.py -r <routerName> [-n nodeName] [-a <addressList> -A <addressList> -s <serviceList> -S <serviceList> -t <top>]
+      analyzer.py -i <inputFile> [-a <addressList> -A <addressList> -s <serviceList> -S <serviceList> -t <top>]
 
-     -i, --input:
-             read session table contents from a file (expected format is as provided by the PCLI's 'show sessions')
-     -o, --output:
-             write session table back into a space-delimited file (can be read in later using '-i'). This is helpful for
-             use with extremely busy systems, where it is impractical to repeatedly query the system's session table
-             using GraphQL
-     -g, --graph:
-             produces a histogram output rather than tabular output, grouping flows by expiry time; useful for tuning session-type timers
-     -r, --router:
-             router name (mandatory when not using -i). Must be run locally on the 128T Conductor, running 4.5.0 or newer
-     -n, --node:
-             node name (optional; when excluded, analyzer will collect all sessions from all nodes in the specified router)
-     -h, --help:
-             prints this help text
-     -v, --version:
-             prints the current version number
-     -a, --address:
-             when followed by a comma-separated list of addresses, will filter the results to only entries containing that address
-     -A, --exclude-address:
-             when followed by a comma-separated list of addresses, will filter out any results containing that address
-     -s, --service:
-             when followed by a comma-separated list of service names, will filter the results to only entries containing that service
-     -S, --exclude-service:
-             will filter the results and exclude any services supplied as a comma-separated list
-     -x, --prefix:
-             when followed by a comma-separated list of prefixes, will filter the results to only include sessions with addresses within that prefix
-     -X, --exclude-prefix:
-             will filter the results to exclude any sessions containing IP addresses within the prefixes supplied as a comma-separated list
-     -p, --port:
-             will filter the results to include only those containing the port(s) specified as a comma-separated list
-     -t, --top:
-             (default: 10) sets the number of entries to display per category
-     -b, --bins:
-             (default: 10) when producing a histogram, the default number of bins is ten; using this parameter can override that default
-"""
-            print(helptext)
-            sys.exit()
-        elif opt in ("-v", "--version"):
-            print("analyzer version " + VERSION)
-            sys.exit()
-        elif opt in ("-i", "--input"):
-            sessionFile = arg
-            doGraphQL = False
-        elif opt in ("-A", "--exclude-address"):
-            excludeList = arg.split(',')
-        elif opt in ("-s", "--service"):
-            serviceList = arg.split(',')
-            filterByService = True
-        elif opt in ("-a", "--address"):
-            addressList = arg.split(',')
-            filterByAddress = True
-        elif opt in ("-p", "--port"):
-            portList = arg.split(',')
-            filterByPort = True
-        elif opt in ("-r", "--router"):
-            routerName = arg
-        elif opt in ("-n", "--node"):
-            nodeName = arg
-        elif opt in ("-o", "--output"):
-            outfile = arg
-        elif opt in ("-S", "--exclude-service"):
-            serviceFilterList = arg.split(",")
-        elif opt in ("-t", "--top"):
-            topX = int(arg)
-        elif opt in ("-x", "--prefix"):
-            p = ""
-            for p in arg.split(','):
-                prefixList.append(ipaddress.ip_network(p, False))
-            filterByPrefix = True
-        elif opt in ("-X", "--exclude-prefix"):
-            p = ""
-            for p in arg.split(','):
-                prefixFilterList.append(ipaddress.ip_network(p, False))
-            filterOutPrefix = True
-        elif opt in ("-b", "--bins"):
-            histBins = int(arg)
-
-    # input validation here
-    if doGraphQL and not routerName:
-        print("Error: must specify a router name when using GraphQL.")
-        sys.exit()
-    if not doGraphQL and routerName:
-        print("Error: cannot use both input file and GraphQL.")
-        sys.exit()
+         -i, --input:
+                 read session table contents from a file (expected format is as provided by the PCLI's 'show sessions')
+         -o, --output:
+                 write session table back into a space-delimited file (can be read in later using '-i'). This is helpful for
+                 use with extremely busy systems, where it is impractical to repeatedly query the system's session table
+                 using GraphQL
+         -g, --graph:
+                 produces a histogram output rather than tabular output, grouping flows by expiry time; useful for tuning session-type timers
+         -r, --router:
+                 router name (mandatory when not using -i). Must be run locally on the 128T Conductor, running 4.5.0 or newer
+         -n, --node:
+                 node name (optional; when excluded, analyzer will collect all sessions from all nodes in the specified router)
+         -h, --help:
+                 prints this help text
+         -v, --version:
+                 prints the current version number
+         -a, --address:
+                 when followed by a comma-separated list of addresses, will filter the results to only entries containing that address
+         -A, --exclude-address:
+                 when followed by a comma-separated list of addresses, will filter out any results containing that address
+         -s, --service:
+                 when followed by a comma-separated list of service names, will filter the results to only entries containing that service
+         -S, --exclude-service:
+                 will filter the results and exclude any services supplied as a comma-separated list
+         -x, --prefix:
+                 when followed by a comma-separated list of prefixes, will filter the results to only include sessions with addresses within that prefix
+         -X, --exclude-prefix:
+                 will filter the results to exclude any sessions containing IP addresses within the prefixes supplied as a comma-separated list
+         -p, --port:
+                 will filter the results to include only those containing the port(s) specified as a comma-separated list
+         -t, --top:
+                 (default: 10) sets the number of entries to display per category
+         -b, --bins:
+                 (default: 10) when producing a histogram, the default number of bins is ten; using this parameter can override that default
+    """
 
     last = ""
     sessions = []
@@ -190,11 +178,11 @@ def main(argv):
     svcDestinations = []
     headers = []
 
-    if doGraphQL:
+    if args.router:
         done = False
         url = "http://127.0.0.1:31517/api/v1/graphql"
         while not done:
-            query = makeQuery(routerName, nodeName, last)
+            query = makeQuery(args.router, args.node, last)
             raw = requests.post(url, json = {'query': query}, headers = headers)
             loopSessions = json.loads(raw.text)
             if loopSessions['data']['allRouters']['nodes'][0]['nodes']['nodes'][0]['flowEntries']['pageInfo']['hasNextPage']:
@@ -205,8 +193,8 @@ def main(argv):
                 session = jsonToList(jSession)
                 sessions.append(session)
     else:
-        with open(sessionFile) as fin:
-            if sessionFile.endswith('json'):
+        with open(args.input) as fin:
+            if args.input.endswith('json'):
                 # this is a total hack...
                 # assume it's a profiles dataset because the filename ends with json
                 profiles = json.loads(fin.read())
@@ -250,28 +238,28 @@ def main(argv):
     for session in sessions:
         if len(session) < 10:
             continue
-        if filterByService and (session[2] not in serviceList):
+        if args.service is not None and (session[2] not in args.service):
             continue
-        if (session[2] in serviceFilterList):
+        if args.exclude_service is not None and (session[2] in args.exclude_service):
             continue
-        if filterByAddress and not isIncluded(addressList, session):
+        if args.address is not None and not isIncluded(args.address, session):
             continue
-        if isIncluded(excludeList, session):
+        if args.exclude_address is not None and isIncluded(args.exclude_address, session):
             continue
-        if filterByPort:
-            sessionPorts = []
-            sessionPorts.append(str(session[8]))
-            sessionPorts.append(str(session[10]))
-            if not isIncluded(portList, sessionPorts):
+        if args.port is not None:
+            if not (session[8] in args.port or 
+                    session[10] in args.port):
                 continue
-        if filterByPrefix:
-            if not (withinPrefix(session[7],prefixList) or withinPrefix(session[9],prefixList)):
+        if args.prefix is not None:
+            if not (withinPrefix(session[7], prefixList) or 
+                    withinPrefix(session[9], prefixList)):
                 continue
-        if filterOutPrefix:
-            if (withinPrefix(session[7], prefixFilterList) or withinPrefix(session[9], prefixFilterList)):
+        if args.exclude_prefix is not None:
+            if (withinPrefix(session[7], excludePrefixList) or 
+                withinPrefix(session[9], excludePrefixList)):
                 continue
         svcDestinations.append(session[2])
-        if drawGraph:
+        if args.graph:
             histValues.append(int(session[14]))
         if session[1] == 'fwd': 
             fwdSources.append(session[7])
@@ -296,7 +284,7 @@ def main(argv):
     ct = Counter(tcpServices)
     cu = Counter(udpServices)
 
-    if drawGraph:
+    if args.graph:
         histMax = max(histValues)
         # print("histMax: " + str(histMax))
         if histMax < 10:
@@ -322,51 +310,51 @@ def main(argv):
 
     output = []
 
-    for x in range (0,topX):
+    for x in range (0,args.top):
         unified = []
         haveMore = True
-        if len(cs.most_common(topX)) < (x + 1):
+        if len(cs.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
             haveMore = False
         else:
-            unified = unified + list(cs.most_common(topX)[x])
+            unified = unified + list(cs.most_common(args.top)[x])
             haveMore = True
-        if len(cfs.most_common(topX)) < (x + 1):
+        if len(cfs.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list (cfs.most_common(topX)[x])
+            unified = unified + list (cfs.most_common(args.top)[x])
             haveMore = True
-        if len(cf.most_common(topX)) < (x + 1):
+        if len(cf.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list(cf.most_common(topX)[x])
+            unified = unified + list(cf.most_common(args.top)[x])
             haveMore = True
-        if len(crs.most_common(topX)) < (x + 1):
+        if len(crs.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list(crs.most_common(topX)[x])
+            unified = unified + list(crs.most_common(args.top)[x])
             haveMore = True
-        if len(cr.most_common(topX)) < (x + 1):
+        if len(cr.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list(cr.most_common(topX)[x])
+            unified = unified + list(cr.most_common(args.top)[x])
             haveMore = True
-        if len(ct.most_common(topX)) < (x + 1):
+        if len(ct.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list(ct.most_common(topX)[x])
+            unified = unified + list(ct.most_common(args.top)[x])
             haveMore = True
-        if len(cu.most_common(topX)) < (x + 1):
+        if len(cu.most_common(args.top)) < (x + 1):
             unified = unified + [None, None]
         else:
-            unified = unified + list(cu.most_common(topX)[x])
+            unified = unified + list(cu.most_common(args.top)[x])
         if (not haveMore):
             break
         output.append(unified)
     tblHeadings = ['Service Name', 'Count', 'Fwd Src', 'Count', 'Fwd Dest', 'Count', 'Rev Src', 'Count', 'Rev Dest', 'Count', 'TCP Port', 'Count', 'UDP Port', 'Count']
     print(tabulate(output, tblHeadings, tablefmt="rst"))
-    if outfile:
-        with open(outfile, 'w') as file:
+    if args.output is not None:
+        with open(args.output, 'w') as file:
             for ses in sessions:
                 file.write(convertToString(ses))
 
