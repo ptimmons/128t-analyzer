@@ -99,6 +99,16 @@ def main(argv):
 
     args = parser.parse_args()
 
+    prefixList = []
+    if args.prefix is not None:
+        for pfx in args.prefix:
+            prefixList.append(ipaddress.ip_network(pfx, False))
+
+    excludePrefixList = []
+    if args.exclude_prefix is not None:
+        for pfx in args.exclude_prefix:
+            excludePrefixList.append(ipaddress.ip_network(pfx, False))
+
     histBins = args.bin
     histMax = 0
     histInterval = 0
@@ -231,12 +241,12 @@ def main(argv):
                     session[10] in args.port):
                 continue
         if args.prefix is not None:
-            if not (withinPrefix(session[7],args.prefix) or 
-                    withinPrefix(session[9],args.prefix)):
+            if not (withinPrefix(session[7], prefixList) or 
+                    withinPrefix(session[9], prefixList)):
                 continue
         if args.exclude_prefix is not None:
-            if (withinPrefix(session[7], args.exclude_prefix) or 
-                withinPrefix(session[9], args.exclude_prefix)):
+            if (withinPrefix(session[7], excludePrefixList) or 
+                withinPrefix(session[9], excludePrefixList)):
                 continue
         svcDestinations.append(session[2])
         if args.graph:
