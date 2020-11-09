@@ -34,9 +34,9 @@ def makeQuery(routerName, nodeName, last):
     qry = '{allRouters(name: "' + routerName + '") {nodes {nodes'
     if nodeName is not None:
         qry += '(name: "' + nodeName + '")'
-    qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort ' + 
-           'deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp ' +
-           'natPort networkInterfaceName protocol serviceName sessionUuid sourceIp ' +
+    qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort ' + \
+           'deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp ' + \
+           'natPort networkInterfaceName protocol serviceName sessionUuid sourceIp ' + \
            'sourcePort startTime tenant vlan} pageInfo { endCursor hasNextPage }}}}}}}'
     # print(qry)
     return qry
