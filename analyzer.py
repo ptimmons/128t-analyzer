@@ -5,7 +5,7 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
-VERSION = "0.4"
+__version__ = "0.4"
 
 import sys
 import json
@@ -13,15 +13,18 @@ import requests
 import ipaddress
 import argparse
 import math
+import logging
 from collections import Counter
 from tabulate import tabulate
 from ascii_graph import Pyasciigraph
+
 
 def isIncluded(list_a, list_b):
     for i in list_a:
         if i in list_b:
             return True
     return False
+
 
 def withinPrefix(address, networkList):
     addressPlusMask = ipaddress.ip_network(address + "/32")
@@ -30,16 +33,18 @@ def withinPrefix(address, networkList):
             return True
     return False
 
+
 def makeQuery(routerName, nodeName, last):
     qry = '{allRouters(name: "' + routerName + '") {nodes {nodes'
     if nodeName is not None:
         qry += '(name: "' + nodeName + '")'
-    qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort ' + \
-           'deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp ' + \
-           'natPort networkInterfaceName protocol serviceName sessionUuid sourceIp ' + \
-           'sourcePort startTime tenant vlan} pageInfo { endCursor hasNextPage }}}}}}}'
+    qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort ' \
+           + 'deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp ' \
+           + 'natPort networkInterfaceName protocol serviceName sessionUuid sourceIp ' \
+           + 'sourcePort startTime tenant vlan} pageInfo { endCursor hasNextPage }}}}}}}'
     # print(qry)
     return qry
+
 
 def jsonToList(jSession):
     if jSession['forward']:
@@ -54,6 +59,7 @@ def jsonToList(jSession):
                 jSession['startTime']]
     return lSession
 
+
 def convertToString(session):
     result = ""
     for s in session:
@@ -61,7 +67,18 @@ def convertToString(session):
     result += '\n'
     return result
 
+
 def main(argv):
+
+    logger = logging.getLogger()
+    handler = logging.FileHandler("/var/log/128technology/analyzer.log")
+    formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+    formatter.default_msec_format = '%s.%03d'
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+    logger.info("Starting profiler.py")
 
     parser = argparse.ArgumentParser(description = '128T session table analyzer')
 
@@ -72,6 +89,9 @@ def main(argv):
                                        help = "retrieve sessions from router <router>")
     get_data_source_group.add_argument('--version', '-v', action = 'store_true', 
                                        help = 'print version information and exit')
+
+    parser.add_argument('--log', '-l', metavar = '<loglevel>', type = str, default = 'INFO', 
+                        help = 'set log level (default: INFO)')
 
     parser.add_argument('--node', '-n', metavar = '<nodename>', type = str, 
                         help = 'limit results to the specific node')
@@ -98,15 +118,16 @@ def main(argv):
     parser.add_argument('--port', '-p', metavar='+', nargs = '+', type = int, 
                         help = 'limit results to those that reference the specific port(s)')
 
-    parser.add_argument('--top', '-t', metavar = '<n>', type = int, 
-                        default = 10, help = 'show top <n> values in tabular output (default: 10)')
-    parser.add_argument('--bin', '-b', metavar = '<n>', type = int, 
-                        default = 10, help = 'render histogram with <n> bins (default: 10)')
+    parser.add_argument('--top', '-t', metavar = '<n>', type = int, default = 10,
+                        help = 'show top <n> values in tabular output (default: 10)')
+    parser.add_argument('--bin', '-b', metavar = '<n>', type = int, default = 10, 
+                        help = 'render histogram with <n> bins (default: 10)')
 
     args = parser.parse_args()
+    logger.setLevel(args.log)
 
     if args.version:
-        print("analyzer version " + VERSION)
+        print("analyzer version " + __version__)
         exit()
 
     prefixList = []
@@ -143,10 +164,6 @@ def main(argv):
                  router name (mandatory when not using -i). Must be run locally on the 128T Conductor, running 4.5.0 or newer
          -n, --node:
                  node name (optional; when excluded, analyzer will collect all sessions from all nodes in the specified router)
-         -h, --help:
-                 prints this help text
-         -v, --version:
-                 prints the current version number
          -a, --address:
                  when followed by a comma-separated list of addresses, will filter the results to only entries containing that address
          -A, --exclude-address:
@@ -351,7 +368,10 @@ def main(argv):
         if (not haveMore):
             break
         output.append(unified)
-    tblHeadings = ['Service Name', 'Count', 'Fwd Src', 'Count', 'Fwd Dest', 'Count', 'Rev Src', 'Count', 'Rev Dest', 'Count', 'TCP Port', 'Count', 'UDP Port', 'Count']
+    tblHeadings = ['Service Name', 'Count', 
+                   'Fwd Src', 'Count', 'Fwd Dest', 'Count', 
+                   'Rev Src', 'Count', 'Rev Dest', 'Count', 
+                   'TCP Port', 'Count', 'UDP Port', 'Count']
     print(tabulate(output, tblHeadings, tablefmt="rst"))
     if args.output is not None:
         with open(args.output, 'w') as file:
