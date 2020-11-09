@@ -268,9 +268,13 @@ def main(argv):
         if args.exclude_address is not None and isIncluded(args.exclude_address, session):
             continue
         if args.port is not None:
-            if not (session[8] in args.port or session[10] in args.port):
+            logger.debug("Filtering by port")
+            if not (int(session[8]) in args.port or int(session[10]) in args.port):
                 logger.debug("Port filter not satisfied: " + str(args.port) + ", " + session[8] + ", " + session[10])
+                logger.debug("Types: " + str(type(args.port[0])) + ", " + str(type(session[8])) + ", " + str(type(session[10])))
                 continue
+            else:
+                logger.debug("Found matching port")
         if args.prefix is not None:
             if not (withinPrefix(session[7], prefixList) or withinPrefix(session[9], prefixList)):
                 continue
