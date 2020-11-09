@@ -1,4 +1,4 @@
-# analyzer.py – Session Analysis for 128T 
+analyzer.py – Session Analysis for 128T 
 
 The `analyzer.py` script was designed to programmatically parse through the mountain of data provided by a 128T router's *session table* (which tracks all active connections through the system) to look for:
 
@@ -33,19 +33,19 @@ The script has two main modes of operation: *online mode* and *offline mode*.
 
 ### Online Mode
 
-Online mode, which requires the script to be run directly on a 128T Conductor node, will use GraphQL to  retrieve the session table from the specified router (and optionally, a node within that router). To run `analyzer` in online mode, you must specify a router using `-r` or `--router=`:
+Online mode, which requires the script to be run directly on a 128T Conductor node, will use GraphQL to  retrieve the session table from the specified router (and optionally, a node within that router). To run `analyzer` in online mode, you must specify a router using `-r` or `--router`:
 
 ```
 [root@labsystem1 ~]# analyzer.py -r newton
 ```
 
-Filtering to a specific node within that router is done using the optional `-n`/`--node=` argument:
+Filtering to a specific node within that router is done using the optional `-n`/`--node` argument:
 
 ```
 [root@labsystem1 ~]# analyzer.py -r newton -n labsystem2
 ```
 
-**Tip**: when running the script on a heavily loaded system, strongly consider using the `-o`/`--output=` flag described below. This will save the session table as a local filesystem, allowing you to re-run the script over the same contents again in offline mode; this saves a lot of wear and tear on the target router, so it doesn't have to repeatedly cough up a huge session table over and over during iterative analysis.
+**Tip**: when running the script on a heavily loaded system, strongly consider using the `-o`/`--output` flag described below. This will save the session table as a local filesystem, allowing you to re-run the script over the same contents again in offline mode; this saves a lot of wear and tear on the target router, so it doesn't have to repeatedly cough up a huge session table over and over during iterative analysis.
 
 ### Offline Mode
 
@@ -65,18 +65,18 @@ There are a bunch of command line options for filtering the dataset returned by 
 
 | Argument             | Usage                                                       |
 | -------------------- | ------------------------------------------------------------ |
-| `-a` or `--address=` | Filters the output to include only sessions/flows that match any of the addresses supplied. The input is provided as a comma-separated list; e.g.,<br />`-a 192.168.1.200,192.168.1.201,192.168.1.203` |
-| `-A` or `--exclude-address=` | Filters the output to exclude any session data with any of the supplied addresses. The input is supplied as a comma-separated list as with `-a`. |
-| `-s` or `--service=` | Filters the output to include only sessions/flows that match for the service name(s) supplied. To specify more than one service name at a time, use a comma-separated list; e.g.,<br />`-s internet,_conductor_1,dns-catcher` |
-| `-S` or `--exclude-service` | Filters the output to exclude any session data with the supplied service name(s). Multiple services can be supplied as a comma-separated list as with `-s`. |
-| `-x` or `--prefix=` | Filters the output to include only sessions/flows that contain an address within the specified prefix(es). To specify more than one prefix at a time, use a comma-separated list; e.g.,<br />`-x 192.168.0.0/16,10.0.0.0/8` |
-| `-X` or `--exclude-prefix=` | Filters the output to exclude any session data containing addresses within the supplied prefix(es). Multiple prefixes can be supplied as a comma-separated list as with `-S`. |
-| `-p` or `--port=` | Filters the output to include only rows that match the specified port(s). Multiple ports can be provided using a comma-separated list. |
-| `-t` or `--top=` | The `analyze` script will show the top ten results from each category by default. You can change this (higher or lower) by specifying the value using `-t`; e.g.,<br />`-t 50` will show the top 50 highest counts for each category. |
-| `-r` or `--router=` | Runs the script in *online mode*. This indicates the router from which the script should request the session table. |
-| `-n` or `--node=` | When running the script in online mode, this allows you to filter the session table to one node of a multinode router. |
-| `-i` or `--input=` | Runs the script in *offline mode*. This will read the contents of the local file you specify as the argument. |
-| `-o` or `--output=` | Writes a local file with the contents of the session table. Useful when working in online mode, to store a copy of the session table to be re-analyzed using offline mode. This allows for iterative analysis of the data without repeatedly requesting the session table from a busy system. |
+| `-a` or `--address` | Filters the output to include only sessions/flows that match any of the addresses supplied. The input is provided as a space-separated list; e.g.,<br />`-a 192.168.1.200 192.168.1.201 192.168.1.203` |
+| `-A` or `--exclude-address` | Filters the output to exclude any session data with any of the supplied addresses. The input is supplied as a space-separated list as with `-a`. |
+| `-s` or `--service` | Filters the output to include only sessions/flows that match for the service name(s) supplied. To specify more than one service name at a time, use a space-separated list; e.g.,<br />`-s internet _conductor_1 dns-catcher` |
+| `-S` or `--exclude-service` | Filters the output to exclude any session data with the supplied service name(s). Multiple services can be supplied as a space-separated list as with `-s`. |
+| `-x` or `--prefix` | Filters the output to include only sessions/flows that contain an address within the specified prefix(es). To specify more than one prefix at a time, use a space-separated list; e.g.,<br />`-x 192.168.0.0/16 10.0.0.0/8` |
+| `-X` or `--exclude-prefix` | Filters the output to exclude any session data containing addresses within the supplied prefix(es). Multiple prefixes can be supplied as a space-separated list as with `-S`. |
+| `-p` or `--port` | Filters the output to include only rows that match the specified port(s). Multiple ports can be provided using a space-separated list. |
+| `-t` or `--top` | The `analyze` script will show the top ten results from each category by default. You can change this (higher or lower) by specifying the value using `-t`; e.g.,<br />`-t 50` will show the top 50 highest counts for each category. |
+| `-r` or `--router` | Runs the script in *online mode*. This indicates the router from which the script should request the session table. |
+| `-n` or `--node` | When running the script in online mode, this allows you to filter the session table to one node of a multinode router. |
+| `-i` or `--input` | Runs the script in *offline mode*. This will read the contents of the local file you specify as the argument. |
+| `-o` or `--output` | Writes a local file with the contents of the session table. Useful when working in online mode, to store a copy of the session table to be re-analyzed using offline mode. This allows for iterative analysis of the data without repeatedly requesting the session table from a busy system. |
 | `-g` or `--graph` | Displays a histogram of the expiry timers for all flows that are part of the output. Useful for identifying traffic patterns to tune `session-type` timers. |
 | `-b` or `--bins` | When using the histogram output, the default is to group the flows into ten bins; this lets you override that value. |
 | `-h` or `--help` | Prints the command syntax to the screen and exits. |
