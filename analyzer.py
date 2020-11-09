@@ -272,8 +272,7 @@ def main(argv):
         if args.exclude_address is not None and isIncluded(args.exclude_address, session):
             continue
         if args.port is not None:
-            if not (session[8] in args.port or 
-                    session[10] in args.port):
+            if not (session[8] in args.port or session[10] in args.port):
                 continue
         if args.prefix is not None:
             if not (withinPrefix(session[7], prefixList) or 
