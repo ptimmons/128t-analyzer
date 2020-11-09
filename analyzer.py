@@ -78,7 +78,7 @@ def main(argv):
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
 
-    logger.info("Starting profiler.py")
+    logger.info("Starting analyzer.py")
 
     parser = argparse.ArgumentParser(description = '128T session table analyzer')
 
@@ -124,7 +124,8 @@ def main(argv):
                         help = 'render histogram with <n> bins (default: 10)')
 
     args = parser.parse_args()
-    logger.setLevel(args.log)
+    logger.setLevel(args.log.upper())
+    logger.info("Set log level to " + args.log.upper())
 
     if args.version:
         print("analyzer version " + __version__)
