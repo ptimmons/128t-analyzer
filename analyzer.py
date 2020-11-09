@@ -283,6 +283,7 @@ def main(argv):
             if (withinPrefix(session[7], excludePrefixList) or 
                 withinPrefix(session[9], excludePrefixList)):
                 continue
+        # TODO: fix this so we don't double count
         svcDestinations.append(session[2])
         if args.graph:
             histValues.append(int(session[14]))
@@ -300,6 +301,7 @@ def main(argv):
                 tcpServices.append(session[8])
             elif session[6].upper() == "UDP":
                 udpServices.append(session[8])
+    logger.info("Svc: " + len(svcDestinations))
 
     cs = Counter(svcDestinations)
     cf = Counter(fwdDestinations)
