@@ -385,6 +385,7 @@ def main(argv):
         with open(args.output, 'w') as file:
             for ses in sessions:
                 file.write(convertToString(ses))
+    logger.info("Stopping analyzer.py")
 
 if __name__ == '__main__':
     main(sys.argv[1:])
