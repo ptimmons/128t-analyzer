@@ -196,7 +196,9 @@ def main(argv):
     svcDestinations = []
     headers = []
 
+    sc = 0
     if args.router:
+        logger.info("Retrieving sessions via GraphQL")
         done = False
         url = "http://127.0.0.1:31517/api/v1/graphql"
         while not done:
@@ -210,7 +212,9 @@ def main(argv):
             for jSession in loopSessions['data']['allRouters']['nodes'][0]['nodes']['nodes'][0]['flowEntries']['nodes']:
                 session = jsonToList(jSession)
                 sessions.append(session)
+                sc += 1
     else:
+        logger.info("Retrieving sessions from " + args.input)
         with open(args.input) as fin:
             if args.input.endswith('json'):
                 # this is a total hack...
@@ -223,6 +227,7 @@ def main(argv):
                         jsession['sessionUuid'] = sessionID
                         session = jsonToList(jsession)
                         sessions.append(session)
+                        sc += 1
             else:
                 for line in fin:
                     if line == "\n":
@@ -232,6 +237,8 @@ def main(argv):
                         # skip over anything that doesn't look like a session ID
                         continue
                     sessions.append(sessionEntry)
+                    sc += 1
+    logger.info("Loaded " + str(sc) + " entries")
 
     """
     This is where we tabulate stuff. For reference, the field mappings are:
