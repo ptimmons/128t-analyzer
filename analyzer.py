@@ -217,6 +217,7 @@ def main(argv):
             if args.input.endswith('json'):
                 # this is a total hack...
                 # assume it's a profiles dataset because the filename ends with json
+                logger.info("Assuming source data is profiler data")
                 profiles = json.loads(fin.read())
                 for address in profiles:
                     for sessionID in profiles[address]:
