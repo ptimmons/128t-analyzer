@@ -5,7 +5,7 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
-__version__ = "0.4"
+__version__ = "0.5"
 
 import sys
 import json
@@ -269,13 +269,8 @@ def main(argv):
         if args.exclude_address is not None and isIncluded(args.exclude_address, session):
             continue
         if args.port is not None:
-            logger.debug("Filtering by port")
             if not (int(session[8]) in args.port or int(session[10]) in args.port):
-                logger.debug("Port filter not satisfied: " + str(args.port) + ", " + session[8] + ", " + session[10])
-                logger.debug("Types: " + str(type(args.port[0])) + ", " + str(type(session[8])) + ", " + str(type(session[10])))
                 continue
-            else:
-                logger.debug("Found matching port")
         if args.prefix is not None:
             if not (withinPrefix(session[7], prefixList) or withinPrefix(session[9], prefixList)):
                 continue
@@ -300,7 +295,6 @@ def main(argv):
                 tcpServices.append(session[8])
             elif session[6].upper() == "UDP":
                 udpServices.append(session[8])
-    logger.info("Svc: " + str(len(svcDestinations)))
 
     cs = Counter(svcDestinations)
     cf = Counter(fwdDestinations)
@@ -383,6 +377,7 @@ def main(argv):
                    'TCP Port', 'Count', 'UDP Port', 'Count']
     print(tabulate(output, tblHeadings, tablefmt="rst"))
     if args.output is not None:
+        logger.info("Writing output file")
         with open(args.output, 'w') as file:
             for ses in sessions:
                 file.write(convertToString(ses))
