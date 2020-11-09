@@ -196,7 +196,6 @@ def main(argv):
     svcDestinations = []
     headers = []
 
-    sc = 0
     if args.router:
         logger.info("Retrieving sessions via GraphQL")
         done = False
@@ -212,7 +211,6 @@ def main(argv):
             for jSession in loopSessions['data']['allRouters']['nodes'][0]['nodes']['nodes'][0]['flowEntries']['nodes']:
                 session = jsonToList(jSession)
                 sessions.append(session)
-                sc += 1
     else:
         logger.info("Retrieving sessions from " + args.input)
         with open(args.input) as fin:
@@ -227,7 +225,6 @@ def main(argv):
                         jsession['sessionUuid'] = sessionID
                         session = jsonToList(jsession)
                         sessions.append(session)
-                        sc += 1
             else:
                 for line in fin:
                     if line == "\n":
@@ -237,8 +234,7 @@ def main(argv):
                         # skip over anything that doesn't look like a session ID
                         continue
                     sessions.append(sessionEntry)
-                    sc += 1
-    logger.info("Loaded " + str(sc) + " entries")
+    logger.info("Loaded " + str(len(sessions)) + " entries")
 
     """
     This is where we tabulate stuff. For reference, the field mappings are:
@@ -275,12 +271,10 @@ def main(argv):
             if not (session[8] in args.port or session[10] in args.port):
                 continue
         if args.prefix is not None:
-            if not (withinPrefix(session[7], prefixList) or 
-                    withinPrefix(session[9], prefixList)):
+            if not (withinPrefix(session[7], prefixList) or withinPrefix(session[9], prefixList)):
                 continue
         if args.exclude_prefix is not None:
-            if (withinPrefix(session[7], excludePrefixList) or 
-                withinPrefix(session[9], excludePrefixList)):
+            if (withinPrefix(session[7], excludePrefixList) or withinPrefix(session[9], excludePrefixList)):
                 continue
         # TODO: fix this so we don't double count
         svcDestinations.append(session[2])
