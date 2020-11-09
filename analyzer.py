@@ -301,7 +301,7 @@ def main(argv):
                 tcpServices.append(session[8])
             elif session[6].upper() == "UDP":
                 udpServices.append(session[8])
-    logger.info("Svc: " + len(svcDestinations))
+    logger.info("Svc: " + str(len(svcDestinations)))
 
     cs = Counter(svcDestinations)
     cf = Counter(fwdDestinations)
