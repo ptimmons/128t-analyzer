@@ -5,7 +5,7 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
-VERSION = "0.4"
+__version__ = "0.4"
 
 import sys
 import json
@@ -13,15 +13,18 @@ import requests
 import ipaddress
 import argparse
 import math
+import logging
 from collections import Counter
 from tabulate import tabulate
 from ascii_graph import Pyasciigraph
+
 
 def isIncluded(list_a, list_b):
     for i in list_a:
         if i in list_b:
             return True
     return False
+
 
 def withinPrefix(address, networkList):
     addressPlusMask = ipaddress.ip_network(address + "/32")
@@ -30,16 +33,18 @@ def withinPrefix(address, networkList):
             return True
     return False
 
+
 def makeQuery(routerName, nodeName, last):
     qry = '{allRouters(name: "' + routerName + '") {nodes {nodes'
     if nodeName is not None:
         qry += '(name: "' + nodeName + '")'
-    qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort ' + \
-           'deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp ' + \
-           'natPort networkInterfaceName protocol serviceName sessionUuid sourceIp ' + \
-           'sourcePort startTime tenant vlan} pageInfo { endCursor hasNextPage }}}}}}}'
+    qry += ' {nodes {flowEntries(after: "' + last + '") {nodes {destIp destPort ' \
+           + 'deviceInterfaceName devicePort encrypted forward inactivityTimeout natIp ' \
+           + 'natPort networkInterfaceName protocol serviceName sessionUuid sourceIp ' \
+           + 'sourcePort startTime tenant vlan} pageInfo { endCursor hasNextPage }}}}}}}'
     # print(qry)
     return qry
+
 
 def jsonToList(jSession):
     if jSession['forward']:
@@ -54,6 +59,7 @@ def jsonToList(jSession):
                 jSession['startTime']]
     return lSession
 
+
 def convertToString(session):
     result = ""
     for s in session:
@@ -61,7 +67,18 @@ def convertToString(session):
     result += '\n'
     return result
 
+
 def main(argv):
+
+    logger = logging.getLogger()
+    handler = logging.FileHandler("/var/log/128technology/analyzer.log")
+    formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+    formatter.default_msec_format = '%s.%03d'
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+    logger.info("Starting analyzer.py")
 
     parser = argparse.ArgumentParser(description = '128T session table analyzer')
 
@@ -72,6 +89,9 @@ def main(argv):
                                        help = "retrieve sessions from router <router>")
     get_data_source_group.add_argument('--version', '-v', action = 'store_true', 
                                        help = 'print version information and exit')
+
+    parser.add_argument('--log', '-l', metavar = '<loglevel>', type = str, default = 'INFO', 
+                        help = 'set log level (default: INFO)')
 
     parser.add_argument('--node', '-n', metavar = '<nodename>', type = str, 
                         help = 'limit results to the specific node')
@@ -98,15 +118,17 @@ def main(argv):
     parser.add_argument('--port', '-p', metavar='+', nargs = '+', type = int, 
                         help = 'limit results to those that reference the specific port(s)')
 
-    parser.add_argument('--top', '-t', metavar = '<n>', type = int, 
-                        default = 10, help = 'show top <n> values in tabular output (default: 10)')
-    parser.add_argument('--bin', '-b', metavar = '<n>', type = int, 
-                        default = 10, help = 'render histogram with <n> bins (default: 10)')
+    parser.add_argument('--top', '-t', metavar = '<n>', type = int, default = 10,
+                        help = 'show top <n> values in tabular output (default: 10)')
+    parser.add_argument('--bin', '-b', metavar = '<n>', type = int, default = 10, 
+                        help = 'render histogram with <n> bins (default: 10)')
 
     args = parser.parse_args()
+    logger.setLevel(args.log.upper())
+    logger.info("Set log level to " + args.log.upper())
 
     if args.version:
-        print("analyzer version " + VERSION)
+        print("analyzer version " + __version__)
         exit()
 
     prefixList = []
@@ -143,10 +165,6 @@ def main(argv):
                  router name (mandatory when not using -i). Must be run locally on the 128T Conductor, running 4.5.0 or newer
          -n, --node:
                  node name (optional; when excluded, analyzer will collect all sessions from all nodes in the specified router)
-         -h, --help:
-                 prints this help text
-         -v, --version:
-                 prints the current version number
          -a, --address:
                  when followed by a comma-separated list of addresses, will filter the results to only entries containing that address
          -A, --exclude-address:
@@ -179,6 +197,7 @@ def main(argv):
     headers = []
 
     if args.router:
+        logger.info("Retrieving sessions via GraphQL")
         done = False
         url = "http://127.0.0.1:31517/api/v1/graphql"
         while not done:
@@ -193,10 +212,12 @@ def main(argv):
                 session = jsonToList(jSession)
                 sessions.append(session)
     else:
+        logger.info("Retrieving sessions from " + args.input)
         with open(args.input) as fin:
             if args.input.endswith('json'):
                 # this is a total hack...
                 # assume it's a profiles dataset because the filename ends with json
+                logger.info("Assuming source data is profiler data")
                 profiles = json.loads(fin.read())
                 for address in profiles:
                     for sessionID in profiles[address]:
@@ -214,6 +235,7 @@ def main(argv):
                         # skip over anything that doesn't look like a session ID
                         continue
                     sessions.append(sessionEntry)
+    logger.info("Loaded " + str(len(sessions)) + " entries")
 
     """
     This is where we tabulate stuff. For reference, the field mappings are:
@@ -247,17 +269,20 @@ def main(argv):
         if args.exclude_address is not None and isIncluded(args.exclude_address, session):
             continue
         if args.port is not None:
-            if not (session[8] in args.port or 
-                    session[10] in args.port):
+            logger.debug("Filtering by port")
+            if not (int(session[8]) in args.port or int(session[10]) in args.port):
+                logger.debug("Port filter not satisfied: " + str(args.port) + ", " + session[8] + ", " + session[10])
+                logger.debug("Types: " + str(type(args.port[0])) + ", " + str(type(session[8])) + ", " + str(type(session[10])))
                 continue
+            else:
+                logger.debug("Found matching port")
         if args.prefix is not None:
-            if not (withinPrefix(session[7], prefixList) or 
-                    withinPrefix(session[9], prefixList)):
+            if not (withinPrefix(session[7], prefixList) or withinPrefix(session[9], prefixList)):
                 continue
         if args.exclude_prefix is not None:
-            if (withinPrefix(session[7], excludePrefixList) or 
-                withinPrefix(session[9], excludePrefixList)):
+            if (withinPrefix(session[7], excludePrefixList) or withinPrefix(session[9], excludePrefixList)):
                 continue
+        # TODO: fix this so we don't double count
         svcDestinations.append(session[2])
         if args.graph:
             histValues.append(int(session[14]))
@@ -275,6 +300,7 @@ def main(argv):
                 tcpServices.append(session[8])
             elif session[6].upper() == "UDP":
                 udpServices.append(session[8])
+    logger.info("Svc: " + str(len(svcDestinations)))
 
     cs = Counter(svcDestinations)
     cf = Counter(fwdDestinations)
@@ -351,12 +377,16 @@ def main(argv):
         if (not haveMore):
             break
         output.append(unified)
-    tblHeadings = ['Service Name', 'Count', 'Fwd Src', 'Count', 'Fwd Dest', 'Count', 'Rev Src', 'Count', 'Rev Dest', 'Count', 'TCP Port', 'Count', 'UDP Port', 'Count']
+    tblHeadings = ['Service Name', 'Count', 
+                   'Fwd Src', 'Count', 'Fwd Dest', 'Count', 
+                   'Rev Src', 'Count', 'Rev Dest', 'Count', 
+                   'TCP Port', 'Count', 'UDP Port', 'Count']
     print(tabulate(output, tblHeadings, tablefmt="rst"))
     if args.output is not None:
         with open(args.output, 'w') as file:
             for ses in sessions:
                 file.write(convertToString(ses))
+    logger.info("Stopping analyzer.py")
 
 if __name__ == '__main__':
     main(sys.argv[1:])
