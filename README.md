@@ -11,21 +11,22 @@ It is a useful tool for taking the data from a running system, and using it to f
 ## Installing
 
 1. Copy the script into `/usr/local/bin` of your 128T Conductor, or anywhere else present in your `$PATH` environment variable. (While the script has usable modes on any operating system with python installed, the primary means of retrieving the session table is using GraphQL, which requires it to be installed directly on a Conductor node.)
-
 2. Set the permissions: `chmod 755 analyzer.py`, and `chown root:root analyzer.py`.
-3. Install the `tabulate` package using *pip* as root user: `pip install tabulate`. (The `tabulate` package is used for displaying the tabular output.)
+3. Install the required packages. On a system that's deployed as a 128T conductor using our standard ISO installation, this will be just `tabulate` and `ascii_graph`. Because these systems do not include `pip3` by default, we'll use `easy_install-3.6` to install `pip3`:
 
-Test your installation by running the script:
+```
+[t128@labsystem1 ~]$ sudo easy_install-3.6 pip
+[t128@labsystem1 ~]$ sudo pip3 install tabulate
+[t128@labsystem1 ~]$ sudo pip3 install ascii_graph
+```
+
+4. Test your installation by running the script:
 
 ```
 [t128@labsystem1 ~]$ sudo analyzer.py --help
 ```
 
 If your installation is successful, you will see the output of the command syntax for `analyzer`.
-
-### Installation on macOS
-
-I haven't done extensive testing on macOS; I run macOS Mojave (which includes python 2.7.16). In order to get the script to run (in offline mode only), you'll need to install the `requests` module in addition to `tabulate`. As an administrative user (i.e., your login account), type `sudo pip install requests tabulate` from a terminal shell.
 
 ## Running the Script
 
