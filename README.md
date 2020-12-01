@@ -1,4 +1,4 @@
-analyzer.py – Session Analysis for 128T 
+# analyzer.py – Session Analysis for 128T 
 
 The `analyzer.py` script was designed to programmatically parse through the mountain of data provided by a 128T router's *session table* (which tracks all active connections through the system) to look for:
 
@@ -31,6 +31,8 @@ If your installation is successful, you will see the output of the command synta
 ## Running the Script
 
 The script has two main modes of operation: *online mode* and *offline mode*.
+
+> Note: *online mode* uses GraphQL to retrieve session data from a 128T conductor. As such, it requires that the conductor is running (at least) 4.4 or newer software. If your conductor is not using at least version 4.4, you can still use the script in *offline mode*.
 
 ### Online Mode
 
