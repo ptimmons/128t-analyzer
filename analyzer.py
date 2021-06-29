@@ -92,7 +92,7 @@ def main(argv):
     get_data_source_group.add_argument('--version', '-v', action = 'store_true', 
                                        help = 'print version information and exit')
 
-    parser.add_argument('--log', '-l', metavar = '<loglevel>', type = str, default = 'INFO', 
+    parser.add_argument('--log', '-l', metavar = '<loglevel>', type = str, 
                         help = 'set log level (default: INFO)')
 
     parser.add_argument('--node', '-n', metavar = '<nodename>', type = str, 
@@ -125,6 +125,11 @@ def main(argv):
     parser.add_argument('--bin', '-b', metavar = '<n>', type = int, default = 10, 
                         help = 'render histogram with <n> bins (default: 10)')
 
+    parser.add_argument('--dnsdb', '-d', action = 'store_true',
+                        help = 'resolve destinations using DNSDB')
+    parser.add_argument('--key', '-k', metavar = '<API_KEY>', type = str, default = '',
+                        help = 'DNSDB API key')
+
 
     args = parser.parse_args()
 
@@ -134,7 +139,8 @@ def main(argv):
 
     _defaults = {
             'analyzer': {
-                'LogLevel': args.log.upper(),
+                'LogLevel': 'INFO',
+                'DNSDB_API_KEY': '',
             }
     }
 
@@ -143,8 +149,12 @@ def main(argv):
 
     settings = config['analyzer']
 
-    logger.setLevel(settings.get('LogLevel'))
-    logger.info("Set log level to " + settings.get('LogLevel'))
+    if args.log is not None:
+        logger.setLevel(args.log.upper())
+        logger.info("Set log level to " + args.log.upper())
+    else:
+        logger.setLevel(settings.get('LogLevel'))
+        logger.info("Set log level to " + settings.get('LogLevel'))
 
     if args.version:
         print("analyzer version " + __version__)
