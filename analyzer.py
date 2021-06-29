@@ -130,6 +130,10 @@ def main(argv):
     configFile = '/etc/128technology/analyzer.conf'
     haveConfig = False
 
+    config.read_dict({'analyzer': {'LogLevel': args.log.upper(),
+                                   'DNSDB_API': ''}
+                     })
+
     if isfile(configFile):
         try:
             config.read('/etc/128technology/analyzer.conf')
@@ -140,11 +144,10 @@ def main(argv):
     else:
         logger.info('No configuration found. Using default values.')
 
-#    if haveConfig:
     settings = config['analyzer']
 
     args = parser.parse_args()
-    logger.setLevel(settings.get('LogLevel', args.log.upper()))
+    logger.setLevel(settings.get('LogLevel')
     logger.info("Set log level to " + args.log.upper())
 
     if args.version:
