@@ -144,7 +144,7 @@ def main(argv):
     settings = config['analyzer']
 
     logger.setLevel(settings.get('LogLevel'))
-    logger.info("Set log level to " + args.log.upper())
+    logger.info("Set log level to " + settings.get('LogLevel'))
 
     if args.version:
         print("analyzer version " + __version__)
