@@ -5,7 +5,7 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
-__version__ = "0.5"
+__version__ = "0.6"
 
 import sys
 import json
@@ -17,6 +17,7 @@ import logging
 from collections import Counter
 from tabulate import tabulate
 from ascii_graph import Pyasciigraph
+import configparser
 
 
 def isIncluded(list_a, list_b):
@@ -123,8 +124,21 @@ def main(argv):
     parser.add_argument('--bin', '-b', metavar = '<n>', type = int, default = 10, 
                         help = 'render histogram with <n> bins (default: 10)')
 
+
+    config = configparser.ConfigParser()
+    haveConfig = False
+
+    try:
+        config.read('/etc/128technology/analyzer.conf')
+        logger.info('Loaded config file /etc/128technology/analyzer.conf')
+        haveConfig = True
+    except:
+        logger.error('No configuration file found. Using default values.')
+
+    settings = config['analyzer']
+
     args = parser.parse_args()
-    logger.setLevel(args.log.upper())
+    logger.setLevel(settings.get('LogLevel', args.log.upper()))
     logger.info("Set log level to " + args.log.upper())
 
     if args.version:
