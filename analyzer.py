@@ -17,6 +17,7 @@ import logging
 from collections import Counter
 from tabulate import tabulate
 from ascii_graph import Pyasciigraph
+from os.path import isfile
 import configparser
 
 
@@ -126,14 +127,18 @@ def main(argv):
 
 
     config = configparser.ConfigParser()
+    configFile = '/etc/128technology/analyzer.conf'
     haveConfig = False
 
-    try:
-        config.read('/etc/128technology/analyzer.conf')
-        logger.info('Loaded config file /etc/128technology/analyzer.conf')
-        haveConfig = True
-    except:
-        logger.error('No configuration file found. Using default values.')
+    if isfile(configFile):
+        try:
+            config.read('/etc/128technology/analyzer.conf')
+            logger.info('Loaded config file /etc/128technology/analyzer.conf')
+            haveConfig = True
+        except:
+            logger.error('Error reading configuration. Using default values.')
+    else:
+        logger.info('No configuration found. Using default values.')
 
     if haveConfig:
         settings = config['analyzer']
