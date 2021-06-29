@@ -147,6 +147,7 @@ def main(argv):
         logger.info('No configuration found. Using default values.')
 
     settings = config['analyzer']
+    print(settings)
 
     logger.setLevel(settings.get('LogLevel'))
     logger.info("Set log level to " + args.log.upper())
