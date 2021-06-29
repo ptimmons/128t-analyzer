@@ -126,6 +126,8 @@ def main(argv):
                         help = 'render histogram with <n> bins (default: 10)')
 
 
+    args = parser.parse_args()
+
     config = configparser.ConfigParser()
     configFile = '/etc/128technology/analyzer.conf'
     haveConfig = False
@@ -146,7 +148,6 @@ def main(argv):
 
     settings = config['analyzer']
 
-    args = parser.parse_args()
     logger.setLevel(settings.get('LogLevel'))
     logger.info("Set log level to " + args.log.upper())
 
