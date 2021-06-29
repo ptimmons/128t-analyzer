@@ -141,7 +141,7 @@ def main(argv):
         logger.info('No configuration found. Using default values.')
 
 #    if haveConfig:
-#        settings = config['analyzer']
+    settings = config['analyzer']
 
     args = parser.parse_args()
     logger.setLevel(settings.get('LogLevel', args.log.upper()))
