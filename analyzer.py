@@ -5,7 +5,7 @@
 # 26-Sep-2020 Patrick Timmons
 ###############################################################################
 
-__version__ = "0.5"
+__version__ = "0.6"
 
 import sys
 import json
@@ -67,6 +67,11 @@ def convertToString(session):
     result += '\n'
     return result
 
+def determineFormat(session):
+    if session[6].upper() in ['GRE', 'ICMP', 'TCP', 'UDP']:
+        return True
+    else:
+        return False
 
 def main(argv):
 
@@ -123,13 +128,16 @@ def main(argv):
     parser.add_argument('--bin', '-b', metavar = '<n>', type = int, default = 10, 
                         help = 'render histogram with <n> bins (default: 10)')
 
+    parser.add_argument('--format', '-f', metavar = '<fileformat>', type = str,
+                        default = 'auto', help = 'file format of source file')
+
     args = parser.parse_args()
     logger.setLevel(args.log.upper())
     logger.info("Set log level to " + args.log.upper())
 
     if args.version:
         print("analyzer version " + __version__)
-        exit()
+        sys.exit()
 
     prefixList = []
     if args.prefix is not None:
@@ -213,8 +221,9 @@ def main(argv):
                 sessions.append(session)
     else:
         logger.info("Retrieving sessions from " + args.input)
+        logger.info("File format is " + args.format)
         with open(args.input) as fin:
-            if args.input.endswith('json'):
+            if args.input.endswith('json') or args.format.upper() == 'JSON':
                 # this is a total hack...
                 # assume it's a profiles dataset because the filename ends with json
                 logger.info("Assuming source data is profiler data")
@@ -235,10 +244,25 @@ def main(argv):
                         # skip over anything that doesn't look like a session ID
                         continue
                     sessions.append(sessionEntry)
-    logger.info("Loaded " + str(len(sessions)) + " entries")
 
+        logger.info("Loaded " + str(len(sessions)) + " entries")
+        if len(sessions) == 0:
+            logger.info("No sessions to process. Finished.")
+            sys.exit()
+    
+        legacyFormat = True
+        if args.format.upper() == 'AUTO':
+            legacyFormat = determineFormat(sessions[0])
+        elif args.format.upper() == 'MODERN':
+            legacyFormat = False
+
+        if legacyFormat:
+            logger.info("Using legacy session format.")
+        else:
+            logger.info("Assuming non-legacy format.")
+    
     """
-    This is where we tabulate stuff. For reference, the field mappings are:
+    This is where we tabulate stuff. The legacy (standard) field mappings are:
      0: session ID (not used)
      1: flow direction, 'fwd' or 'rev'
      2: service name
@@ -255,9 +279,14 @@ def main(argv):
     13: Is encrypted (True or False) (not used)
     14: timeout value (not used)
     15+ not used, if present
+
+    In 5.2+, a the network-interface name (Intf Name) was inserted between fields 4 and 5. We adjust
+    for that below.
     """
 
     for session in sessions:
+        if not(legacyFormat):
+            del session[5]
         if len(session) < 10:
             continue
         if args.service is not None and (session[2] not in args.service):
