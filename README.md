@@ -82,6 +82,7 @@ There are a bunch of command line options for filtering the dataset returned by 
 | `-o` or `--output` | Writes a local file with the contents of the session table. Useful when working in online mode, to store a copy of the session table to be re-analyzed using offline mode. This allows for iterative analysis of the data without repeatedly requesting the session table from a busy system. |
 | `-g` or `--graph` | Displays a histogram of the expiry timers for all flows that are part of the output. Useful for identifying traffic patterns to tune `session-type` timers. |
 | `-b` or `--bins` | When using the histogram output, the default is to group the flows into ten bins; this lets you override that value. |
+| `-f` or `--format` | Default: `auto`. This lets you specify the input format of the source file when using the `--input` argument. Options are: `auto` (let the software guess), `json` (for profiler output), `modern` (for 5.2+ software versions), `legacy` (for pre-5.2 software). |
 | `-h` or `--help` | Prints the command syntax to the screen and exits. |
 | `-v` or `--version` | Prints the current version and exits. |
 
@@ -100,6 +101,8 @@ The **Fwd Src** and **Fwd Dest** columns tabulates the most common IP addresses 
 The **Rev Src** and **Rev Dest** column tabulates the most common IP addresses present in the **Src IP** and **Dest IP** columns of *reverse flows* from the session table. For inbound sessions these will be the targets on the "LAN" of the router. For outbound sessions these will be the actual address at the remote location.
 
 The **TCP Port** and **UDP Port** columns tabulate the most common TCP and UDP port numbers found in the table. These can be matched against well-known port lists (e.g., the contents of `/etc/services` on any Linux host, or online databases such as [SANS Internet Storm Center](https://isc.sans.edu/port.html)). Note that the table will invariably include waypoint ports; these are typically in the range of 16385-65535 and should be fairly readily identifiable.
+
+> Note: if you are processing an input file and the tabular output is missing some data, it is possible that the parser assumed the incorrect input format. Use the `--format` command line switch to force it to `modern` and re-test. (Please reach out to me with your source file so I can investigate further.
 
 ## Disclaimer
 
