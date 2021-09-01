@@ -205,7 +205,6 @@ def main(argv):
     headers = []
 
     if args.router:
-        legacyFormat = False
         logger.info("Retrieving sessions via GraphQL")
         done = False
         url = "http://127.0.0.1:31517/api/v1/graphql"
@@ -251,16 +250,16 @@ def main(argv):
             logger.info("No sessions to process. Finished.")
             sys.exit()
     
-        legacyFormat = True
-        if args.format.upper() == 'AUTO':
-            legacyFormat = determineFormat(sessions[0])
-        elif args.format.upper() == 'MODERN':
-            legacyFormat = False
+    legacyFormat = True
+    if args.format.upper() == 'AUTO':
+        legacyFormat = determineFormat(sessions[0])
+    elif args.format.upper() == 'MODERN':
+        legacyFormat = False
 
-        if legacyFormat:
-            logger.info("Using legacy session format.")
-        else:
-            logger.info("Assuming non-legacy format.")
+    if legacyFormat:
+        logger.info("Using legacy session format.")
+    else:
+        logger.info("Assuming non-legacy format.")
     
     """
     This is where we tabulate stuff. The legacy (standard) field mappings are:
