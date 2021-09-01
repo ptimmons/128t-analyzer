@@ -205,6 +205,7 @@ def main(argv):
     headers = []
 
     if args.router:
+        legacyFormat = False
         logger.info("Retrieving sessions via GraphQL")
         done = False
         url = "http://127.0.0.1:31517/api/v1/graphql"
